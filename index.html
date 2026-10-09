@@ -444,7 +444,8 @@ function historyHTML(){
 }
 function histList(){
   const qq = q.trim().toLowerCase();
-  const ks = Object.keys(S.days).sort().reverse().filter(k => !qq || hay(k).includes(qq));
+  const now = todayISO();
+  const ks = Object.keys(S.days).sort().reverse().filter(k => k <= now && (!qq || hay(k).includes(qq)));
   if (!ks.length) return `<p class="empty">${qq ? 'nothing matches.' : 'no days logged yet.<br>import your history from the data tab.'}</p>`;
   const groups = [];
   for (const k of ks) { const mk = k.slice(0, 7); if (!groups.length || groups[groups.length - 1].mk !== mk) groups.push({mk, ks: []}); groups[groups.length - 1].ks.push(k); }
