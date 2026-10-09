@@ -545,12 +545,12 @@ function mealChips(){
   if (!m.size) return DEF_MEALS;
   // jersey mike's is a wednesday thing: only offer it on wednesdays, and put it first then
   const wed = fromISO(sel).getDay() === 3;
-  const list = [...m.values()].filter(o => wed || !WED_ONLY.includes(o.k)).sort((a, b) => b.r - a.r || b.c - a.c);
+  const list = [...m.values()].filter(o => (wed || !WED_ONLY.includes(o.k)) && o.r >= 2).sort((a, b) => b.r - a.r || b.c - a.c);   // one-off visits don't earn a button
   if (wed) list.sort((a, b) => (WED_ONLY.includes(b.k) ? 1 : 0) - (WED_ONLY.includes(a.k) ? 1 : 0));
   return list.slice(0, 14).map(o => [...o.names.entries()].sort((a, b) => b[1] - a[1])[0][0]);
 }
 const WED_ONLY = ['jerseymikes'];
-const NEVER_MEALS = ['pizza', 'leftovers', 'leftoverpizza', 'church'];   // usually leftovers, not a place
+const NEVER_MEALS = ['pizza', 'leftovers', 'leftoverpizza', 'church', 'wafflemonkey', 'fasslerhall'];   // usually leftovers, not a place
 function mealSheet(f){
   const cur = get(sel)[f] || '';
   openSheet(`
