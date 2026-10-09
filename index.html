@@ -556,7 +556,9 @@ function dataSheet(){
     <button class="danger" id="wipe">erase this device</button>`, b => {
     const g = id => b.querySelector(id);
     if (g('#sgo')) g('#sgo').onclick = async () => {
-      const url = g('#surl').value.trim(), key = g('#skey').value.trim();
+      const rawUrl = g('#surl').value, key = g('#skey').value.replace(/[\s`'"]/g, '');
+      const m = rawUrl.match(/https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec/);
+      const url = m ? m[0] : rawUrl.trim();   // drops anything pasted after /exec, like ?key=…
       if (!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(url)) { alert('that doesn’t look like an apps script web app url. it should start with https://script.google.com/ and end with /exec'); return; }
       if (!key) { alert('paste the sync key too.'); return; }
       g('#sgo').textContent = 'connecting…'; g('#sgo').disabled = true;
@@ -774,6 +776,24 @@ function fromRow(r){
   d.u = +c(13) || 0;
   return d;
 }
+// One round trip to the sheet's script. Reads the reply as text so a Google error page gives a readable message.
+async function talk(body){
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 90000);
+  let res, text;
+  try {
+    res = await fetch(S.meta.sync.url, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body, signal: ctl.signal, redirect: 'follow'});
+    text = await res.text();
+  } catch (e) {
+    if (e && e.name === 'AbortError') { const x = new Error('google took too long to answer'); x.name = 'AbortError'; throw x; }
+    throw e;
+  } finally { clearTimeout(tm); }
+  try { return JSON.parse(text); }
+  catch (e) {
+    const title = (text.match(/<title[^>]*>([^<]*)/i) || [])[1];
+    const plain = text.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    throw new Error(`google sent a page instead of data (status ${res.status}): ` + ((title ? title.trim() + ' — ' : '') + plain).slice(0, 160));
+  }
+}
 async function sync(){
   if (!syncOn()) return false;
   if (syncing) { again = true; return false; }
@@ -786,11 +806,10 @@ async function sync(){
   const rows = dirty.map(k => { const d = S.days[k] || {}; const row = toRow(k, d); sent[k] = row[13]; return row; });
   let ok = false;
   try {
-    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 45000);
-    const res = await fetch(S.meta.sync.url, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'},
-      body: JSON.stringify({key: S.meta.sync.key, rows}), signal: ctl.signal, redirect: 'follow'});
-    clearTimeout(tm);
-    const j = await res.json();
+    const body = JSON.stringify({key: S.meta.sync.key, rows});
+    let j;
+    try { j = await talk(body); }
+    catch (e1) { await new Promise(r => setTimeout(r, 1500)); j = await talk(body); }   // one automatic retry
     if (!j.ok) throw new Error(j.error || 'sync failed');
     for (const k of dirty) { const d = S.days[k]; if (!d || (d.u || 0) <= sent[k]) delete S.meta.dirty[k]; }
     let changed = false; remoteU = {};
