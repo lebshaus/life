@@ -113,6 +113,7 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .maxlbl.l{left:0;transform:none}.maxlbl.r{left:auto;right:0;transform:none}
 .bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--cc);border-radius:3px;opacity:.85}
 .bar.zero::after{background:var(--line);opacity:1}
+.bar.over::after{opacity:1;background:linear-gradient(var(--ink) 0 3px,var(--cc) 3px)}
 .bar.fut::after{background:transparent}
 .bar.sel::after{outline:2px solid var(--ink);outline-offset:1px}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:4px 0 10px}
@@ -394,8 +395,8 @@ function monthHTML(){
   for (const k in S.days) if (k.slice(0, 4) === String(y) && k.slice(0, 7) <= selMonth) { ytdCC += sum(S.days[k].cc); ytdBO += sum(S.days[k].bo); }
 
   const vals = days.map(([, d]) => sum(d.cc));
-  // bars top out at $200; anything bigger is drawn full height
-  const top = 20000, plotH = 120;
+  // bars top out at $500; bigger days are drawn full height with a black tip
+  const top = 50000, plotH = 160;
   const maxV = Math.max(...vals), maxI = maxV > 0 ? vals.indexOf(maxV) : -1;
   const avgDay = elapsed ? cc / elapsed : 0;
 
@@ -421,7 +422,7 @@ function monthHTML(){
 
   <section class="card">
     <h2>card spend by day</h2>
-    <div class="bars" style="height:${plotH + 22}px">${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
+    <div class="bars" style="height:${plotH + 22}px">${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
 
