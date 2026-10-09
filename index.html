@@ -169,6 +169,8 @@ nav .in{display:flex;width:100%;max-width:560px}
 .chip.on small{color:inherit}
 .chips.big .chip{padding:10px 14px}
 .chip.dash{color:var(--muted)}
+.chip.wild{background:transparent;border:1.5px dashed var(--muted)}
+.chip.wild small{color:var(--muted);font-weight:500;margin-left:2px}
 .primary,.secondary,.danger,.ghostbtn{display:block;width:100%;border-radius:14px;padding:14px;font-weight:650;text-align:center;margin-top:8px}
 .primary{background:var(--accent);color:var(--accent-ink)}
 .primary.cc{background:var(--cc-btn);color:#fff}
@@ -539,15 +541,26 @@ function mealChips(){
     const v = (S.days[k][f] || '').trim();
     if (!v || v === '-') continue;
     const key = mealKey(v); if (!key || NEVER_MEALS.includes(key)) continue;
-    const o = m.get(key) || {k: key, c: 0, r: 0, names: new Map()};
-    o.c++; if (k >= since) o.r++; o.names.set(v, (o.names.get(v) || 0) + 1); m.set(key, o);
+    const o = m.get(key) || {k: key, c: 0, r: 0, last: '', names: new Map()};
+    o.c++; if (k >= since) o.r++; if (k > o.last) o.last = k; o.names.set(v, (o.names.get(v) || 0) + 1); m.set(key, o);
   }
   if (!m.size) return DEF_MEALS;
   // jersey mike's is a wednesday thing: only offer it on wednesdays, and put it first then
   const wed = fromISO(sel).getDay() === 3;
   const list = [...m.values()].filter(o => (wed || !WED_ONLY.includes(o.k)) && o.r >= 2).sort((a, b) => b.r - a.r || b.c - a.c);   // one-off visits don't earn a button
   if (wed) list.sort((a, b) => (WED_ONLY.includes(b.k) ? 1 : 0) - (WED_ONLY.includes(a.k) ? 1 : 0));
-  return list.slice(0, 14).map(o => [...o.names.entries()].sort((a, b) => b[1] - a[1])[0][0]);
+  const name = o => [...o.names.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const shown = list.slice(0, 14);
+  const out = shown.map(name);
+  // wildcard: an old favorite (3+ visits) you haven't been to in 30+ days; rotates once a day
+  const stale = addDays(todayISO(), -30);
+  const pool = [...m.values()].filter(o => o.c >= 3 && !shown.includes(o) && o.last < stale && !WED_ONLY.includes(o.k))
+    .sort((a, b) => a.k < b.k ? -1 : 1);
+  if (pool.length) {
+    const dayNum = Math.round(fromISO(todayISO()) / 864e5);   // cycles through every old favorite before repeating
+    out.wild = name(pool[dayNum % pool.length]); out.push(out.wild);
+  }
+  return out;
 }
 const WED_ONLY = ['jerseymikes'];
 const NEVER_MEALS = ['pizza', 'leftovers', 'leftoverpizza', 'church', 'wafflemonkey', 'fasslerhall'];   // usually leftovers, not a place
@@ -555,7 +568,7 @@ function mealSheet(f){
   const cur = get(sel)[f] || '';
   openSheet(`
     <div class="sheet-h">meal ${f === 'm1' ? 1 : 2} · ${sel === todayISO() ? 'today' : short(sel)}</div>
-    <div class="chips big">${mealChips().map(c => `<button class="chip ${c === cur ? 'on' : ''}" data-v="${esc(c)}">${esc(c)}</button>`).join('')}
+    <div class="chips big">${(mc => mc.map(c => `<button class="chip ${c === cur ? 'on' : ''} ${c === mc.wild ? 'wild' : ''}" data-v="${esc(c)}">${esc(c)}${c === mc.wild ? ' <small>wildcard</small>' : ''}</button>`).join(''))(mealChips())}
       <button class="chip dash ${cur === '-' ? 'on' : ''}" data-v="-">— skipped</button></div>
     <input id="mv" class="field" placeholder="or type it…" value="${esc(cur === '-' ? '' : cur)}" autocapitalize="none" autocomplete="off" enterkeyhint="done">
     <div class="row2"><button class="ghostbtn" id="clr">clear</button><button class="primary" id="ok">save</button></div>`, b => {
