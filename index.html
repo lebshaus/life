@@ -396,8 +396,8 @@ function monthHTML(){
   for (const k in S.days) if (k.slice(0, 4) === String(y) && k.slice(0, 7) <= selMonth) { ytdCC += sum(S.days[k].cc); ytdBO += sum(S.days[k].bo); }
 
   const vals = days.map(([, d]) => sum(d.cc));
-  // bars top out at $500; bigger days are drawn full height with a black tip
-  const top = 50000, plotH = 160;
+  // the chart's top is the month's biggest day, up to $500; bigger days are drawn full height with a black tip
+  const top = Math.min(50000, Math.max(1, ...vals)), plotH = 160;
   const maxV = Math.max(...vals), maxI = maxV > 0 ? vals.indexOf(maxV) : -1;
   const avgDay = elapsed ? cc / elapsed : 0;
 
