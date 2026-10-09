@@ -107,8 +107,12 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 #cclist,#bolist{scroll-margin-top:12px}
 .h2n{float:right;font-weight:500;color:var(--muted);font-size:12px}
 .tile.cc .v{color:var(--cc)} .tile.bo .v{color:var(--bofa)}
-.bars{display:flex;align-items:flex-end;gap:2px;height:110px;padding:8px 0 0}
-.bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:132px;padding:22px 0 0;position:relative}
+.bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px;position:relative}
+.maxlbl{position:absolute;left:50%;bottom:calc(var(--h)*100% + 3px);transform:translateX(-50%);font-size:11px;font-weight:650;color:var(--ink);white-space:nowrap;pointer-events:none}
+.maxlbl.l{left:0;transform:none}.maxlbl.r{left:auto;right:0;transform:none}
+.avgline{position:absolute;left:0;right:0;border-top:1.5px dashed var(--muted);opacity:.7;pointer-events:none;z-index:1}
+.h2n .dash{display:inline-block;width:14px;border-top:1.5px dashed var(--muted);opacity:.7;vertical-align:middle;margin-right:5px}
 .bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--cc);border-radius:3px;opacity:.85}
 .bar.zero::after{background:var(--line);opacity:1}
 .bar.fut::after{background:transparent}
@@ -392,7 +396,13 @@ function monthHTML(){
   const vals = days.map(([, d]) => sum(d.cc));
   // fixed scale: 110px = $150; the chart grows taller to fit a bigger day
   const top = Math.max(15000, ...vals);
-  const barsH = Math.round(110 * top / 15000);
+  const plotH = Math.round(110 * top / 15000);
+  // average daily card spend for the year, through today (or the whole year for past years)
+  let yrCC = 0;
+  for (const k in S.days) if (k.slice(0, 4) === String(y) && k <= t) yrCC += sum(S.days[k].cc);
+  const yrDays = String(y) < t.slice(0, 4) ? (y % 4 ? 365 : 366) : Math.round((fromISO(t) - new Date(y, 0, 1)) / 864e5) + 1;
+  const yrAvg = String(y) <= t.slice(0, 4) && yrDays > 0 ? yrCC / yrDays : 0;
+  const maxV = Math.max(...vals), maxI = maxV > 0 ? vals.indexOf(maxV) : -1;
   const avgDay = elapsed ? cc / elapsed : 0;
 
 
@@ -416,8 +426,8 @@ function monthHTML(){
   </div>
 
   <section class="card">
-    <h2>card spend by day</h2>
-    <div class="bars" style="height:${barsH}px">${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''}" style="--h:${(v / top).toFixed(4)}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}"></button>`).join('')}</div>
+    <h2>card spend by day${yrAvg ? `<span class="h2n"><i class="dash"></i>${y} avg ${fmt$0(yrAvg)}/day</span>` : ''}</h2>
+    <div class="bars" style="height:${plotH + 22}px">${yrAvg ? `<div class="avgline" style="bottom:${(yrAvg / top * plotH).toFixed(1)}px"></div>` : ''}${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''}" style="--h:${(v / top).toFixed(4)}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
 
