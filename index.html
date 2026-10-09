@@ -111,9 +111,10 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px;position:relative}
 .maxlbl{position:absolute;left:50%;bottom:calc(var(--h)*100% + 3px);transform:translateX(-50%);font-size:11px;font-weight:650;color:var(--ink);white-space:nowrap;pointer-events:none}
 .maxlbl.l{left:0;transform:none}.maxlbl.r{left:auto;right:0;transform:none}
-.bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--cc);border-radius:3px;opacity:.85}
+.bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--bc, var(--cc));border-radius:3px;opacity:.85}
+.bar.vac::after{opacity:1}
 .bar.zero::after{background:var(--line);opacity:1}
-.bar.over::after{opacity:1;background:linear-gradient(var(--ink) 0 3px,var(--cc) 3px)}
+.bar.over::after{opacity:1;background:linear-gradient(var(--ink) 0 3px,var(--bc, var(--cc)) 3px)}
 .bar.fut::after{background:transparent}
 .bar.sel::after{outline:2px solid var(--ink);outline-offset:1px}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:4px 0 10px}
@@ -422,7 +423,7 @@ function monthHTML(){
 
   <section class="card">
     <h2>card spend by day</h2>
-    <div class="bars" style="height:${plotH + 22}px">${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
+    <div class="bars" style="height:${plotH + 22}px">${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''} ${days[i][1].hl ? 'vac' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}${days[i][1].hl ? ';--bc:' + days[i][1].hl : ''}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
 
