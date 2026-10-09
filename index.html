@@ -188,6 +188,9 @@ nav .in{display:flex;width:100%;max-width:560px}
 .bills-k{font-size:12px;font-weight:600;color:var(--muted);margin-right:2px}
 .bill{font-size:13px;font-weight:650;padding:5px 11px;border-radius:99px;border:1.5px solid var(--bofa);color:var(--bofa)}
 .bill:active{background:var(--bofa-soft)}
+.bill.sub{border-color:var(--cc);color:var(--cc)}
+.bill.sub:active{background:var(--cc-soft)}
+.bill small{font-weight:500;opacity:.8}
 .backup-nudge{display:block;width:100%;text-align:center;font-size:13px;color:var(--muted);padding:6px 0}
 .backup-nudge b{color:var(--accent)}
 </style>
@@ -287,6 +290,7 @@ function todayHTML(){
   const mk = sel.slice(0, 7);
   const monthHasW = Object.keys(S.days).some(k => k.slice(0, 7) === mk && S.days[k].w != null);
   const due = sel === t ? billsDue() : [];
+  const subs = sel === t ? subsDue() : [];
   const items = [...(d.cc || []).map((e, i) => ({...e, acct: 'cc', i})), ...(d.bo || []).map((e, i) => ({...e, acct: 'bo', i}))];
   const bkAge = S.meta.lastBackup ? (Date.now() - S.meta.lastBackup) / 864e5 : Infinity;
   const nDays = Object.keys(S.days).length;
@@ -306,6 +310,7 @@ function todayHTML(){
       <button class="spend-btn bo" data-act="add" data-acct="bo"><span class="k">bofa</span><span class="v">${fmt$(sum(d.bo))}</span><span class="plus">+</span></button>
     </div>
     ${due.length ? `<div class="bills"><span class="bills-k">bills to log</span>${due.map(b => `<button class="bill" data-act="bill" data-n="${esc(b.n)}">${esc(b.n)}</button>`).join('')}</div>` : ''}
+    ${subs.length ? `<div class="bills"><span class="bills-k">subscriptions</span>${subs.map(x => `<button class="bill sub" data-act="sub" data-n="${esc(x.n)}">${esc(x.n)} <small>${fmt$(x.a)}</small></button>`).join('')}</div>` : ''}
     ${items.length ? `<ul class="entries">${items.map(e => `
       <li><span class="tag ${e.acct}">${e.acct === 'cc' ? 'card' : 'bofa'}</span>
       <span class="lbl">${esc(e.n || '')}</span>
@@ -505,6 +510,7 @@ function addSheet(acct, opt){
     };
     b.querySelectorAll('.chip').forEach(ch => ch.onclick = () => pick(ch.dataset.l, +ch.dataset.a || 0));
     if (opt.label) pick(opt.label, opt.last || 0); else amt.focus();
+    if (opt.amount) amt.value = (opt.amount / 100).toFixed(2);
     amt.oninput = () => amt.classList.remove('bad');
     const go = () => {
       const c = parseAmt(amt.value);
@@ -553,6 +559,20 @@ function mealSheet(f){
   });
 }
 
+/* ---------- subscription reminders (card) ---------- */
+// shows from the usual charge day until logged; a matching label or exact amount since 3 days before counts as logged
+const SUBS = [{n: 'claude', a: 2000, day: 8}, {n: 'visible', a: 2500, day: 9}, {n: 'spotify', a: 1299, day: 11}, {n: 'silk', a: 399, day: 25}, {n: 'google one', a: 299, day: 28}];
+function subsDue(){
+  const td = fromISO(todayISO());
+  return SUBS.filter(x => {
+    if (td.getDate() < x.day) return false;
+    for (const d = new Date(td.getFullYear(), td.getMonth(), x.day - 3); d <= td; d.setDate(d.getDate() + 1)) {
+      const dd = S.days[iso(d)];
+      if (dd && (dd.cc || []).some(e => (e.n || '').toLowerCase().includes(x.n) || e.a === x.a)) return false;
+    }
+    return true;
+  });
+}
 /* ---------- monthly bills reminder ---------- */
 const BILLS = ['mortgage', 'ok natural gas', 'at&t fiber', 'og&e', 'okc utilities'];
 const FIXED_BILLS = ['mortgage'];
@@ -742,6 +762,7 @@ document.addEventListener('click', e => {
   else if (act === 'next') { if (sel < t) { sel = addDays(sel, 1); render(); } }
   else if (act === 'gotoday') { sel = t; render(); }
   else if (act === 'add') addSheet(el.dataset.acct);
+  else if (act === 'sub') { const x = SUBS.find(y => y.n === el.dataset.n); if (x) addSheet('cc', {label: x.n, amount: x.a}); }
   else if (act === 'bill') { const b = billsDue().find(x => x.n === el.dataset.n); if (b) addSheet('bo', {label: b.n, last: b.a}); }
   else if (act === 'meal') mealSheet(el.dataset.f);
   else if (act === 'del') {
