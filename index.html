@@ -188,7 +188,6 @@ nav .in{display:flex;width:100%;max-width:560px}
 .bills-k{font-size:12px;font-weight:600;color:var(--muted);margin-right:2px}
 .bill{font-size:13px;font-weight:650;padding:5px 11px;border-radius:99px;border:1.5px solid var(--bofa);color:var(--bofa)}
 .bill:active{background:var(--bofa-soft)}
-.skip{display:block;margin:12px auto 0;font-size:13px;color:var(--muted);text-decoration:underline}
 .backup-nudge{display:block;width:100%;text-align:center;font-size:13px;color:var(--muted);padding:6px 0}
 .backup-nudge b{color:var(--accent)}
 </style>
@@ -492,7 +491,7 @@ function addSheet(acct, opt){
     <input id="lbl" class="field" placeholder="what for? (optional)" autocomplete="off" autocapitalize="none" enterkeyhint="done">
     ${chips.length ? `<div class="chips bo">${chips.map(c => `<button class="chip" data-l="${esc(c.name)}" data-a="${c.last ?? ''}">${esc(c.name)}${c.last != null ? ` <small>${fmt$(c.last)}</small>` : ''}</button>`).join('')}</div>` : ''}
     <button class="primary ${bo ? 'bo' : 'cc'}" id="ok">add</button>
-    ${opt.bill ? `<button class="skip" id="skip">paid another way · skip this month</button>` : ''}`, b => {
+`, b => {
     const amt = b.querySelector('#amt'), lbl = b.querySelector('#lbl');
     // fixed bills (mortgage) fill in their amount; everything else just shows last time's amount as a hint
     const pick = (label, last) => {
@@ -506,9 +505,6 @@ function addSheet(acct, opt){
     };
     b.querySelectorAll('.chip').forEach(ch => ch.onclick = () => pick(ch.dataset.l, +ch.dataset.a || 0));
     if (opt.label) pick(opt.label, opt.last || 0); else amt.focus();
-    if (opt.bill) b.querySelector('#skip').onclick = () => {
-      (S.meta.billSkip = S.meta.billSkip || {})[opt.label] = todayISO(); persist(); closeSheet(); render(); toast(opt.label + ' skipped this month');
-    };
     amt.oninput = () => amt.classList.remove('bad');
     const go = () => {
       const c = parseAmt(amt.value);
@@ -560,15 +556,14 @@ function mealSheet(f){
 /* ---------- monthly bills reminder ---------- */
 const BILLS = ['mortgage', 'ok natural gas', 'at&t fiber', 'og&e', 'okc utilities'];
 const FIXED_BILLS = ['mortgage'];
-// a bill shows up again ~27 days after it was last logged (or skipped), so drifting due dates still work
+// a bill shows up again ~27 days after it was last logged, so drifting due dates still work
 function billsDue(){
   const t = todayISO(), last = {}, lastAmt = {};
   for (const k of Object.keys(S.days).sort()) for (const e of (S.days[k].bo || [])) {
     const n = (e.n || '').trim().toLowerCase();
     if (BILLS.includes(n)) { last[n] = k; lastAmt[n] = e.a; }
   }
-  const skip = S.meta.billSkip || {};
-  return BILLS.map(n => ({n, when: [last[n], skip[n]].filter(Boolean).sort().pop(), a: lastAmt[n]}))
+  return BILLS.map(n => ({n, when: last[n], a: lastAmt[n]}))
     .filter(b => b.when && (fromISO(t) - fromISO(b.when)) / 864e5 >= 27);
 }
 function ago(ts){ const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; }
@@ -747,7 +742,7 @@ document.addEventListener('click', e => {
   else if (act === 'next') { if (sel < t) { sel = addDays(sel, 1); render(); } }
   else if (act === 'gotoday') { sel = t; render(); }
   else if (act === 'add') addSheet(el.dataset.acct);
-  else if (act === 'bill') { const b = billsDue().find(x => x.n === el.dataset.n); if (b) addSheet('bo', {label: b.n, last: b.a, bill: true}); }
+  else if (act === 'bill') { const b = billsDue().find(x => x.n === el.dataset.n); if (b) addSheet('bo', {label: b.n, last: b.a}); }
   else if (act === 'meal') mealSheet(el.dataset.f);
   else if (act === 'del') {
     const d = ensure(sel), arr = d[el.dataset.acct], i = +el.dataset.i, it = arr[i];
