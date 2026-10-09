@@ -104,8 +104,7 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .tile .s{font-size:12px;color:var(--muted)}
 .tile.tap{display:block;text-align:left;width:100%;font:inherit;align-self:stretch}
 .tile.tap:active{background:var(--fill)}
-.tile .chev{font-style:normal;margin-left:4px;display:inline-block;line-height:1;font-size:14px;vertical-align:top;transition:transform .15s}
-.tile.open .chev{transform:rotate(90deg)}
+#cclist,#bolist{scroll-margin-top:12px}
 .h2n{float:right;font-weight:500;color:var(--muted);font-size:12px}
 .tile.cc .v{color:var(--cc)} .tile.bo .v{color:var(--bofa)}
 .bars{display:flex;align-items:flex-end;gap:2px;height:110px;padding:8px 0 0}
@@ -281,7 +280,7 @@ function ensure(k){ const d = S.days[k] || (S.days[k] = {}); d.cc = d.cc || []; 
 function markDirty(k){ const d = S.days[k]; if (d) d.u = Date.now(); (S.meta.dirty = S.meta.dirty || {})[k] = 1; }
 
 /* ---------- view state ---------- */
-let view = 'today', sel = todayISO(), lastToday = sel, selMonth = sel.slice(0, 7), q = '', showCC = false;
+let view = 'today', sel = todayISO(), lastToday = sel, selMonth = sel.slice(0, 7), q = '';
 function rollover(){
   const t = todayISO();
   if (t !== lastToday) { if (sel === lastToday) sel = t; if (selMonth === lastToday.slice(0, 7)) selMonth = t.slice(0, 7); lastToday = t; render(); }
@@ -411,8 +410,8 @@ function monthHTML(){
     <button class="icon" data-act="mnext" aria-label="Next month" ${selMonth >= curM ? 'disabled' : ''}>›</button>
   </header>
   <div class="tiles">
-    <button class="tile cc tap${showCC ? ' open' : ''}" data-act="ccall" aria-expanded="${showCC}"><div class="k">card<i class="chev">›</i></div><div class="v">${fmt$0(cc)}</div><div class="s">${elapsed ? fmt$0(avgDay) + '/day' : '&nbsp;'}</div></button>
-    <div class="tile bo"><div class="k">bofa</div><div class="v">${fmt$0(bo)}</div><div class="s">${boList.length} payment${boList.length === 1 ? '' : 's'}</div></div>
+    <button class="tile cc tap" data-act="jump" data-to="cclist"><div class="k">card</div><div class="v">${fmt$0(cc)}</div><div class="s">${elapsed ? fmt$0(avgDay) + '/day' : '&nbsp;'}</div></button>
+    <button class="tile bo tap" data-act="jump" data-to="bolist"><div class="k">bofa</div><div class="v">${fmt$0(bo)}</div><div class="s">${boList.length} payment${boList.length === 1 ? '' : 's'}</div></button>
     <div class="tile"><div class="k">avg sleep</div><div class="v">${avgS != null ? avgS.toFixed(1) + 'h' : '—'}</div><div class="s">${sl.length} nights</div></div>
     <div class="tile"><div class="k">workouts</div><div class="v">${wo}</div><div class="s">${elapsed ? (wo / elapsed * 7).toFixed(1) + '/week' : '&nbsp;'}</div></div>
     <div class="tile"><div class="k">days logged</div><div class="v">${logged}</div><div class="s">of ${elapsed || dim}</div></div>
@@ -427,7 +426,7 @@ function monthHTML(){
 
   ${spots.length ? `<section class="card"><h2>where you ate</h2><div class="spots">${spots.map(s => `<span class="spot">${esc(s.n)}<b>${s.c}</b></span>`).join('')}</div></section>` : ''}
 
-  ${boList.length ? `<section class="card"><h2>bofa</h2><ul class="list">${boList.map(o => `
+  ${boList.length ? `<section class="card" id="bolist"><h2>bofa</h2><ul class="list">${boList.map(o => `
     <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
       <span class="t">${o.e.n ? esc(o.e.n) : `<small>${esc(o.notes || 'no label')}</small>`}</span>
       <span class="a">${fmt$(o.e.a)}</span></button></li>`).join('')}</ul></section>` : ''}
@@ -437,7 +436,7 @@ function monthHTML(){
       <span class="t">${esc([...new Set((o.d.cc || []).map(e => (e.n || '').trim().toLowerCase()).filter(Boolean))].join(', '))}<small>${esc(o.d.notes || '')}</small></span>
       <span class="a">${fmt$(o.v)}</span></button></li>`).join('')}</ul></section>` : ''}
 
-  ${showCC && ccList.length ? `<section class="card" id="cclist"><h2>card<span class="h2n">${ccList.length} charges</span></h2><ul class="list">${ccList.map(o => `
+  ${ccList.length ? `<section class="card" id="cclist"><h2>card<span class="h2n">${ccList.length} charges</span></h2><ul class="list">${ccList.map(o => `
     <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
       <span class="t">${o.e.n ? esc(o.e.n) : `<small>no label</small>`}</span>
       <span class="a">${fmt$(o.e.a)}</span></button></li>`).join('')}</ul></section>` : ''}
@@ -830,7 +829,7 @@ document.addEventListener('click', e => {
   }
   else if (act === 'sleep') { const d = ensure(sel); d.s = d.s == null ? 7 : Math.max(0, Math.min(14, d.s + +el.dataset.n)); save(); render(); }
   else if (act === 'wo') { const d = ensure(sel); d.wo = !d.wo; save(); render(); }
-  else if (act === 'ccall') { showCC = !showCC; render(); if (showCC) { const el = document.getElementById('cclist'); if (el) el.scrollIntoView({behavior: 'smooth', block: 'start'}); } }
+  else if (act === 'jump') { const to = document.getElementById(el.dataset.to); if (to) to.scrollIntoView({behavior: 'smooth', block: 'start'}); }
   else if (act === 'mprev') { selMonth = addMonths(selMonth, -1); render(); }
   else if (act === 'mnext') { if (selMonth < t.slice(0, 7)) { selMonth = addMonths(selMonth, 1); render(); } }
   else if (act === 'goday') { const k = el.dataset.k; if (k <= t) { sel = k; view = 'today'; render(); scrollTo(0, 0); } }
