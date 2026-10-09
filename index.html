@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="life">
+<meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121211" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>life</title>
+<style>
+:root{
+  --bg:#f4f2ee;--card:#ffffff;--ink:#1c1b19;--muted:#7a756c;--line:#e7e3db;--fill:#efece6;
+  --accent:#1f7a5c;--accent-ink:#ffffff;--soft:#e4f1ea;--bofa:#3b5bb5;--bofa-soft:#e6ebf8;--danger:#b23a2b;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 2px 10px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#121211;--card:#1c1b19;--ink:#eeebe5;--muted:#9a958c;--line:#2c2a27;--fill:#262522;
+  --accent:#4cc293;--accent-ink:#0d1f17;--soft:#1d3329;--bofa:#8aa6f0;--bofa-soft:#1f2740;--danger:#f07a68;
+  --shadow:none;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom));min-height:100vh;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation}
+input,textarea{font:inherit;color:inherit;font-size:16px;text-transform:lowercase}
+body,button{text-transform:lowercase}
+main{max-width:560px;margin:0 auto;padding:0 16px 24px}
+
+/* header */
+.top{display:flex;align-items:center;gap:8px;padding:14px 0 10px}
+.icon{width:44px;height:44px;border-radius:22px;font-size:28px;line-height:1;color:var(--muted);display:grid;place-items:center}
+.icon:active{background:var(--fill)}
+.icon:disabled{opacity:.25}
+.when{flex:1;text-align:center}
+.when-l{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.when-d{font-size:13px;color:var(--muted)}
+.ttl{font-size:28px;font-weight:750;letter-spacing:-.02em;margin:0}
+.jump{display:block;margin:-2px auto 10px;font-size:13px;font-weight:600;color:var(--accent);background:var(--soft);padding:6px 12px;border-radius:99px}
+
+/* cards */
+.card{background:var(--card);border-radius:18px;padding:6px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card h2{font-size:13px;font-weight:650;letter-spacing:.01em;color:var(--muted);margin:10px 0 2px}
+.row{display:flex;align-items:center;gap:12px;min-height:50px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.row:last-child{border-bottom:0}
+.row .k{flex:0 0 84px;color:var(--muted);font-size:15px}
+.row .v{flex:1;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .v.ph{color:var(--muted);font-weight:400}
+.chev{color:var(--muted);font-size:20px}
+.inl{flex:1;min-width:0;border:0;background:transparent;padding:12px 0;outline:none;font-weight:550}
+.inl::placeholder,textarea::placeholder{color:var(--muted);font-weight:400;opacity:.8}
+.hint{font-size:13px;color:var(--muted);padding:10px 0 12px}
+.whint{font-size:13px;color:var(--muted);white-space:nowrap}
+
+/* spend */
+.spend{padding:12px}
+.spend-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.spend-btn{position:relative;text-align:left;border-radius:14px;padding:12px 14px 14px;background:var(--soft)}
+.spend-btn.bo{background:var(--bofa-soft)}
+.spend-btn .k{display:block;font-size:13px;font-weight:650;color:var(--accent)}
+.spend-btn.bo .k{color:var(--bofa)}
+.spend-btn .v{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+.spend-btn .plus{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:15px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:20px;font-weight:600;line-height:1}
+.spend-btn.bo .plus{background:var(--bofa);color:#fff}
+.spend-btn:active{transform:scale(.98)}
+.entries{list-style:none;margin:8px 2px 0;padding:0}
+.entries li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
+.tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--soft);color:var(--accent)}
+.tag.bo{background:var(--bofa-soft);color:var(--bofa)}
+.entries .lbl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entries .amt{font-variant-numeric:tabular-nums;font-weight:600}
+.x{width:32px;height:32px;border-radius:16px;color:var(--muted);font-size:20px}
+.x:active{background:var(--fill)}
+
+/* controls */
+.stepper{margin-left:auto;display:flex;align-items:center;gap:4px}
+.stepper button{width:40px;height:36px;border-radius:10px;background:var(--fill);font-size:20px}
+.stepper .sv{min-width:56px;text-align:center;font-weight:650;font-variant-numeric:tabular-nums}
+.switch{margin-left:auto;width:52px;height:32px;border-radius:16px;background:var(--fill);position:relative;transition:background .15s}
+.switch i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:13px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.switch.on{background:var(--accent)}
+.switch.on i{transform:translateX(20px)}
+textarea{width:100%;border:0;background:transparent;outline:none;resize:none;padding:4px 0 12px;min-height:72px;line-height:1.45}
+
+/* month */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.tile{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
+.tile .k{font-size:12px;color:var(--muted);font-weight:600}
+.tile .v{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .s{font-size:12px;color:var(--muted)}
+.tile.cc .v{color:var(--accent)} .tile.bo .v{color:var(--bofa)}
+.bars{display:flex;align-items:flex-end;gap:2px;height:110px;padding:8px 0 0}
+.bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px}
+.bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--accent);border-radius:3px;opacity:.85}
+.bar.zero::after{background:var(--line);opacity:1}
+.bar.over::after{opacity:1;background:linear-gradient(var(--ink) 0 3px,var(--accent) 3px)}
+.bar.fut::after{background:transparent}
+.bar.sel::after{outline:2px solid var(--ink);outline-offset:1px}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:4px 0 10px}
+.list{list-style:none;margin:0;padding:0}
+.list li{border-top:1px solid var(--line)}
+.list li:first-child{border-top:0}
+.lrow{display:flex;gap:10px;align-items:baseline;padding:10px 0;width:100%;text-align:left;font-size:15px}
+.lrow .d{flex:0 0 52px;color:var(--muted);font-size:13px}
+.lrow .t{flex:1;min-width:0}
+.lrow .t small{display:block;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .a{font-weight:650;font-variant-numeric:tabular-nums}
+.spots{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 12px}
+.spot{background:var(--fill);border-radius:99px;padding:5px 11px;font-size:14px}
+.spot b{color:var(--muted);font-weight:600;margin-left:4px}
+.ytd{text-align:center;font-size:13px;color:var(--muted);margin:6px 0 0}
+.muted{color:var(--muted)}
+
+/* history */
+.search{width:100%;border:0;border-radius:12px;background:var(--fill);padding:11px 14px;outline:none;margin-bottom:6px}
+.mh{font-size:14px;font-weight:650;color:var(--muted);margin:18px 4px 6px;display:flex;justify-content:space-between}
+.mh span{font-weight:500}
+.hrow{display:flex;gap:12px;width:100%;text-align:left;background:var(--card);padding:10px 14px;border-bottom:1px solid var(--line)}
+.hgroup{border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.hgroup .hrow:last-child{border-bottom:0}
+.hrow:active{background:var(--fill)}
+.hd{flex:0 0 32px;text-align:center}
+.hd b{display:block;font-size:19px;line-height:1.1}
+.hd small{font-size:11px;color:var(--muted)}
+.hm{flex:1;min-width:0}
+.hm .l1,.hm .l2{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm .l1{font-size:15px;font-weight:550}
+.hm .l2{font-size:13px;color:var(--muted)}
+.hr{text-align:right;font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:flex-end}
+.hr .bo{color:var(--bofa)}
+.hr small{font-weight:400;color:var(--muted);font-size:12px}
+.empty{text-align:center;color:var(--muted);padding:40px 0}
+
+/* tab bar */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;background:color-mix(in srgb,var(--card) 88%,transparent);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+nav .in{display:flex;width:100%;max-width:560px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--muted);padding:4px 0}
+.tab svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{color:var(--accent)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-radius:20px 20px 0 0;
+  padding:8px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .22s ease;max-height:85vh;overflow:auto;
+  max-width:560px;margin:0 auto;visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
+.sheet.open{transform:none;visibility:visible;transition:transform .22s ease}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+.sheet-h{font-size:17px;font-weight:700;margin:0 0 12px}
+.amt-wrap{display:flex;align-items:center;gap:4px;font-size:36px;font-weight:700;border-bottom:2px solid var(--accent);margin-bottom:12px}
+.amt-wrap.bo{border-color:var(--bofa)}
+.amt-wrap span{color:var(--muted)}
+.amt-wrap input{flex:1;min-width:0;border:0;background:transparent;font-size:36px;font-weight:700;outline:none;padding:4px 0;font-variant-numeric:tabular-nums}
+.amt-wrap input.bad{color:var(--danger)}
+.field{width:100%;border:0;border-radius:12px;background:var(--fill);padding:12px 14px;outline:none;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{background:var(--fill);border-radius:99px;padding:8px 13px;font-size:15px;font-weight:550}
+.chip small{color:var(--muted);font-weight:500;margin-left:2px}
+.chip:active,.chip.on{background:var(--accent);color:var(--accent-ink)}
+.chip.on small{color:inherit}
+.chips.big .chip{padding:10px 14px}
+.chip.dash{color:var(--muted)}
+.primary,.secondary,.danger,.ghostbtn{display:block;width:100%;border-radius:14px;padding:14px;font-weight:650;text-align:center;margin-top:8px}
+.primary{background:var(--accent);color:var(--accent-ink)}
+.primary.bo{background:var(--bofa);color:#fff}
+.secondary{background:var(--fill)}
+.danger{color:var(--danger);background:transparent;margin-top:18px}
+.ghostbtn{background:var(--fill);color:var(--muted)}
+.row2{display:flex;gap:10px}
+.row2>*{flex:1}
+.small{font-size:13px}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:all .2s;z-index:60;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.backup-nudge{display:block;width:100%;text-align:center;font-size:13px;color:var(--muted);padding:6px 0}
+.backup-nudge b{color:var(--accent)}
+</style>
+</head>
+<body>
+<main id="main"></main>
+
+<nav><div class="in">
+  <button class="tab" data-view="today"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>today</button>
+  <button class="tab" data-view="month"><svg viewBox="0 0 24 24"><path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/></svg>month</button>
+  <button class="tab" data-view="history"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>history</button>
+  <button class="tab" data-view="data"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6M4.5 12v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6"/></svg>data</button>
+</div></nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileIn" accept=".json,.csv,.tsv,.txt,application/json,text/csv" hidden>
+
+<script>
+(function(){
+'use strict';
+const KEY = 'daily.v1';
+const MON = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+const DOW = ['sun','mon','tue','wed','thu','fri','sat'];
+const DEF = {
+  cc: [{n:'visible',a:2500},{n:'claude',a:2000},{n:'google',a:299},{n:'gas'},{n:'groceries'},{n:'amazon'}],
+  bo: [{n:'mortgage'},{n:'og&e'},{n:'ok natural gas'},{n:'okc utilities'},{n:'at&t fiber'},{n:'cash'}]
+};
+const DEF_MEALS = ['braums','chick fil a','jersey mikes','golden chick','pollo campero','canes'];
+
+const $ = s => document.querySelector(s);
+const main = $('#main'), sheet = $('#sheet'), sheetBody = $('#sheetBody'), scrim = $('#scrim');
+const pad = n => String(n).padStart(2, '0');
+const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const todayISO = () => iso(new Date());
+const fromISO = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (k, n) => { const d = fromISO(k); d.setDate(d.getDate() + n); return iso(d); };
+const addMonths = (mk, n) => { const [y, m] = mk.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt$ = c => (c < 0 ? '-' : '') + '$' + (Math.abs(c) / 100).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const fmt$0 = c => '$' + Math.round(c / 100).toLocaleString('en-US');
+const short = k => { const d = fromISO(k); return MON[d.getMonth()].slice(0, 3) + ' ' + d.getDate(); };
+const sum = a => (a || []).reduce((t, e) => t + (e.a || 0), 0);
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/* ---------- storage ---------- */
+let S = null;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+if (!S || typeof S.days !== 'object' || !S.days) S = {v: 1, days: {}, meta: {}};
+S.meta = S.meta || {};
+let saveT = null;
+function save(){ clearTimeout(saveT); saveT = setTimeout(saveNow, 250); }
+function saveNow(){
+  clearTimeout(saveT); saveT = null;
+  for (const k in S.days) if (blank(S.days[k])) delete S.days[k];
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (e) { toast('couldn’t save — back up from data'); }
+}
+addEventListener('pagehide', () => { if (saveT) saveNow(); });
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+function blank(d){
+  return !d || (d.s == null && !d.wo && !d.m1 && !d.m2 && !d.mood && !d.gr && d.w == null &&
+    !(d.cc && d.cc.length) && !(d.bo && d.bo.length) && !d.notes);
+}
+const get = k => S.days[k] || {};
+function ensure(k){ const d = S.days[k] || (S.days[k] = {}); d.cc = d.cc || []; d.bo = d.bo || []; return d; }
+
+/* ---------- view state ---------- */
+let view = 'today', sel = todayISO(), lastToday = sel, selMonth = sel.slice(0, 7), q = '';
+function rollover(){
+  const t = todayISO();
+  if (t !== lastToday) { if (sel === lastToday) sel = t; if (selMonth === lastToday.slice(0, 7)) selMonth = t.slice(0, 7); lastToday = t; render(); }
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (saveT) saveNow(); } else rollover(); });
+
+function render(){
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.view === view));
+  main.innerHTML = view === 'today' ? todayHTML() : view === 'month' ? monthHTML() : historyHTML();
+  main.querySelectorAll('textarea').forEach(autosize);
+}
+function autosize(t){ t.style.height = 'auto'; t.style.height = Math.max(72, t.scrollHeight) + 'px'; }
+
+/* ---------- today ---------- */
+function lastWeight(before){
+  let best = null;
+  for (const k in S.days) if (k < before && S.days[k].w != null && (!best || k > best.k)) best = {k, w: S.days[k].w};
+  return best;
+}
+function todayHTML(){
+  const d = get(sel), t = todayISO(), dt = fromISO(sel);
+  const dayName = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][dt.getDay()];
+  const label = sel === t ? 'today' : sel === addDays(t, -1) ? 'yesterday' : dayName;
+  const lw = lastWeight(sel);
+  const mk = sel.slice(0, 7);
+  const monthHasW = Object.keys(S.days).some(k => k.slice(0, 7) === mk && S.days[k].w != null);
+  const items = [...(d.cc || []).map((e, i) => ({...e, acct: 'cc', i})), ...(d.bo || []).map((e, i) => ({...e, acct: 'bo', i}))];
+  const bkAge = S.meta.lastBackup ? (Date.now() - S.meta.lastBackup) / 864e5 : Infinity;
+  const nDays = Object.keys(S.days).length;
+  return `
+  <header class="top">
+    <button class="icon" data-act="prev" aria-label="previous day">‹</button>
+    <div class="when"><div class="when-l">${label}</div>
+      <div class="when-d">${MON[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}</div></div>
+    <button class="icon" data-act="next" aria-label="next day" ${sel >= t ? 'disabled' : ''}>›</button>
+  </header>
+  ${sel !== t ? '<button class="jump" data-act="gotoday">back to today</button>' : ''}
+
+  <section class="card spend">
+    <div class="spend-btns">
+      <button class="spend-btn" data-act="add" data-acct="cc"><span class="k">card</span><span class="v">${fmt$(sum(d.cc))}</span><span class="plus">+</span></button>
+      <button class="spend-btn bo" data-act="add" data-acct="bo"><span class="k">bofa</span><span class="v">${fmt$(sum(d.bo))}</span><span class="plus">+</span></button>
+    </div>
+    ${items.length ? `<ul class="entries">${items.map(e => `
+      <li><span class="tag ${e.acct}">${e.acct === 'cc' ? 'card' : 'bofa'}</span>
+      <span class="lbl">${esc(e.n || '')}</span>
+      <span class="amt">${fmt$(e.a)}</span>
+      <button class="x" data-act="del" data-acct="${e.acct}" data-i="${e.i}" aria-label="Remove">×</button></li>`).join('')}</ul>` : ''}
+  </section>
+
+  <section class="card">
+    <h2>meals</h2>
+    ${['m1', 'm2'].map((f, i) => `
+    <button class="row" data-act="meal" data-f="${f}"><span class="k">meal ${i + 1}</span>
+      <span class="v ${d[f] ? '' : 'ph'}">${d[f] === '-' ? '—' : esc(d[f] || 'add')}</span><span class="chev">›</span></button>`).join('')}
+  </section>
+
+  <section class="card">
+    <div class="row"><span class="k">sleep</span>
+      <div class="stepper"><button data-act="sleep" data-n="-0.5" aria-label="Less sleep">−</button>
+      <span class="sv">${d.s != null ? d.s + 'h' : '—'}</span>
+      <button data-act="sleep" data-n="0.5" aria-label="More sleep">+</button></div></div>
+    <div class="row"><span class="k">workout</span>
+      <button class="switch ${d.wo ? 'on' : ''}" data-act="wo" role="switch" aria-checked="${!!d.wo}" aria-label="Worked out"><i></i></button></div>
+    <label class="row"><span class="k">weight</span>
+      <input class="inl" data-f="w" inputmode="decimal" autocomplete="off" value="${d.w ?? ''}" placeholder="lbs">
+      ${d.w == null && lw ? `<span class="whint">last ${lw.w} · ${short(lw.k)}</span>` : ''}</label>
+    ${!monthHasW ? `<div class="hint">no weight logged in ${MON[dt.getMonth()]} yet</div>` : ''}
+  </section>
+
+  <section class="card">
+    <label class="row"><span class="k">mood</span>
+      <input class="inl" data-f="mood" value="${esc(d.mood || '')}" placeholder="one word" autocapitalize="none" autocomplete="off"></label>
+    <label class="row"><span class="k">grateful</span>
+      <input class="inl" data-f="gr" value="${esc(d.gr || '')}" placeholder="for…" autocapitalize="none" autocomplete="off"></label>
+  </section>
+
+  <section class="card">
+    <h2>notes</h2>
+    <textarea data-f="notes" rows="3" placeholder="what happened today…" autocapitalize="none">${esc(d.notes || '')}</textarea>
+  </section>
+  ${nDays && bkAge > 30 ? `<button class="backup-nudge" data-act="data">${S.meta.lastBackup ? 'last backup ' + Math.floor(bkAge) + ' days ago' : 'no backup yet'} · <b>back up</b></button>` : ''}`;
+}
+
+/* ---------- month ---------- */
+function monthHTML(){
+  const [y, m] = selMonth.split('-').map(Number);
+  const dim = new Date(y, m, 0).getDate(), t = todayISO(), curM = t.slice(0, 7);
+  const keys = Array.from({length: dim}, (_, i) => `${y}-${pad(m)}-${pad(i + 1)}`);
+  const days = keys.map(k => [k, get(k)]);
+  const cc = days.reduce((a, [, d]) => a + sum(d.cc), 0);
+  const bo = days.reduce((a, [, d]) => a + sum(d.bo), 0);
+  const sl = days.map(([, d]) => d.s).filter(v => v != null);
+  const avgS = sl.length ? (sl.reduce((a, b) => a + b, 0) / sl.length) : null;
+  const wo = days.filter(([, d]) => d.wo).length;
+  const logged = days.filter(([, d]) => !blank(d)).length;
+  const elapsed = selMonth === curM ? +t.slice(8) : selMonth < curM ? dim : 0;
+  const weights = days.filter(([, d]) => d.w != null);
+  const lastW = weights.length ? weights[weights.length - 1] : null;
+  const prevW = lastWeight(keys[0]);
+
+  let ytdCC = 0, ytdBO = 0;
+  for (const k in S.days) if (k.slice(0, 4) === String(y) && k.slice(0, 7) <= selMonth) { ytdCC += sum(S.days[k].cc); ytdBO += sum(S.days[k].bo); }
+
+  const vals = days.map(([, d]) => sum(d.cc));
+  const nz = vals.filter(v => v > 0).sort((a, b) => a - b);
+  const cap = Math.max(15000, nz.length ? nz[Math.floor(nz.length * 0.9)] : 0);
+  const avgDay = elapsed ? cc / elapsed : 0;
+
+  const spotMap = new Map();
+  days.forEach(([, d]) => ['m1', 'm2'].forEach(f => { const v = (d[f] || '').trim(); if (v && v !== '-') { const k = mealKey(v); const o = spotMap.get(k) || {n: v, c: 0}; o.c++; spotMap.set(k, o); } }));
+  const spots = [...spotMap.values()].sort((a, b) => b.c - a.c).slice(0, 6);
+
+  const boList = days.flatMap(([k, d]) => (d.bo || []).map(e => ({k, e, notes: d.notes})));
+  const bigDays = days.map(([k, d]) => ({k, v: sum(d.cc), d})).filter(o => o.v > 0).sort((a, b) => b.v - a.v).slice(0, 5);
+
+  return `
+  <header class="top">
+    <button class="icon" data-act="mprev" aria-label="Previous month">‹</button>
+    <div class="when"><div class="when-l">${MON[m - 1]}</div><div class="when-d">${y}</div></div>
+    <button class="icon" data-act="mnext" aria-label="Next month" ${selMonth >= curM ? 'disabled' : ''}>›</button>
+  </header>
+  <div class="tiles">
+    <div class="tile cc"><div class="k">card</div><div class="v">${fmt$0(cc)}</div><div class="s">${elapsed ? fmt$0(avgDay) + '/day' : '&nbsp;'}</div></div>
+    <div class="tile bo"><div class="k">bofa</div><div class="v">${fmt$0(bo)}</div><div class="s">${boList.length} payment${boList.length === 1 ? '' : 's'}</div></div>
+    <div class="tile"><div class="k">avg sleep</div><div class="v">${avgS != null ? avgS.toFixed(1) + 'h' : '—'}</div><div class="s">${sl.length} nights</div></div>
+    <div class="tile"><div class="k">workouts</div><div class="v">${wo}</div><div class="s">${elapsed ? (wo / elapsed * 7).toFixed(1) + '/week' : '&nbsp;'}</div></div>
+    <div class="tile"><div class="k">days logged</div><div class="v">${logged}</div><div class="s">of ${elapsed || dim}</div></div>
+    <div class="tile"><div class="k">weight</div><div class="v">${lastW ? lastW[1].w : '—'}</div><div class="s">${lastW ? short(lastW[0]) : prevW ? 'last ' + prevW.w + ' · ' + short(prevW.k) : 'not logged'}</div></div>
+  </div>
+
+  <section class="card">
+    <h2>card spend by day</h2>
+    <div class="bars">${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > cap ? 'over' : ''}" style="--h:${Math.min(1, v / cap).toFixed(3)}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}"></button>`).join('')}</div>
+    <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
+  </section>
+
+  ${spots.length ? `<section class="card"><h2>where you ate</h2><div class="spots">${spots.map(s => `<span class="spot">${esc(s.n)}<b>${s.c}</b></span>`).join('')}</div></section>` : ''}
+
+  ${boList.length ? `<section class="card"><h2>bofa</h2><ul class="list">${boList.map(o => `
+    <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
+      <span class="t">${o.e.n ? esc(o.e.n) : `<small>${esc(o.notes || 'no label')}</small>`}</span>
+      <span class="a">${fmt$(o.e.a)}</span></button></li>`).join('')}</ul></section>` : ''}
+
+  ${bigDays.length ? `<section class="card"><h2>biggest card days</h2><ul class="list">${bigDays.map(o => `
+    <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
+      <span class="t">${esc((o.d.cc || []).map(e => e.n).filter(Boolean).join(', ') || '')}<small>${esc(o.d.notes || '')}</small></span>
+      <span class="a">${fmt$(o.v)}</span></button></li>`).join('')}</ul></section>` : ''}
+
+  <p class="ytd">${y} through ${MON[m - 1].slice(0, 3)}: card ${fmt$0(ytdCC)} · bofa ${fmt$0(ytdBO)}</p>`;
+}
+
+/* ---------- history ---------- */
+function hay(k){
+  const d = S.days[k];
+  return [k, d.m1, d.m2, d.mood, d.gr, d.notes, ...(d.cc || []).map(e => e.n), ...(d.bo || []).map(e => e.n)].join(' ').toLowerCase();
+}
+function historyHTML(){
+  return `<header class="top"><h1 class="ttl">history</h1></header>
+  <input id="q" class="search" type="search" placeholder="search notes, meals, mood…" value="${esc(q)}" autocapitalize="none" autocomplete="off">
+  <div id="hlist">${histList()}</div>`;
+}
+function histList(){
+  const qq = q.trim().toLowerCase();
+  const ks = Object.keys(S.days).sort().reverse().filter(k => !qq || hay(k).includes(qq));
+  if (!ks.length) return `<p class="empty">${qq ? 'nothing matches.' : 'no days logged yet.<br>import your history from the data tab.'}</p>`;
+  const groups = [];
+  for (const k of ks) { const mk = k.slice(0, 7); if (!groups.length || groups[groups.length - 1].mk !== mk) groups.push({mk, ks: []}); groups[groups.length - 1].ks.push(k); }
+  return groups.map(g => {
+    const [y, m] = g.mk.split('-').map(Number);
+    const tot = g.ks.reduce((a, k) => a + sum(S.days[k].cc), 0);
+    return `<h3 class="mh">${MON[m - 1]} ${y}<span>${qq ? g.ks.length + ' days' : 'card ' + fmt$0(tot)}</span></h3><div class="hgroup">${g.ks.map(k => {
+      const d = S.days[k], dt = fromISO(k);
+      const meals = [d.m1, d.m2].filter(v => v && v !== '-').join(' · ');
+      const c = sum(d.cc), b = sum(d.bo);
+      const meta = [d.s != null ? d.s + 'h' : '', d.wo ? 'workout' : ''].filter(Boolean).join(' · ');
+      return `<button class="hrow" data-act="goday" data-k="${k}">
+        <span class="hd"><b>${dt.getDate()}</b><small>${DOW[dt.getDay()]}</small></span>
+        <span class="hm"><span class="l1">${esc(meals || d.mood || '—')}</span><span class="l2">${esc(d.notes || '')}</span></span>
+        <span class="hr">${c ? `<span>${fmt$(c)}</span>` : ''}${b ? `<span class="bo">${fmt$(b)}</span>` : ''}${meta ? `<small>${meta}</small>` : ''}</span></button>`;
+    }).join('')}</div>`;
+  }).join('');
+}
+
+/* ---------- sheets ---------- */
+function openSheet(html, mount){
+  sheetBody.innerHTML = html;
+  sheet.classList.add('open'); scrim.classList.add('open');
+  sheet.scrollTop = 0;
+  if (mount) mount(sheetBody);
+}
+function closeSheet(){
+  sheet.classList.remove('open'); scrim.classList.remove('open');
+  if (document.activeElement && sheet.contains(document.activeElement)) document.activeElement.blur();
+}
+scrim.onclick = closeSheet;
+if (window.visualViewport) {
+  const fit = () => { const vv = visualViewport; sheet.style.bottom = Math.max(0, innerHeight - vv.height - vv.offsetTop) + 'px'; };
+  visualViewport.addEventListener('resize', fit); visualViewport.addEventListener('scroll', fit);
+}
+
+function labelChips(acct){
+  const m = new Map();
+  Object.keys(S.days).sort().forEach(k => (S.days[k][acct] || []).forEach(e => {
+    if (!e.n) return;
+    const key = e.n.trim().toLowerCase();
+    const o = m.get(key) || {name: e.n.trim(), count: 0, last: null};
+    o.count++; o.last = e.a; m.set(key, o);
+  }));
+  DEF[acct].forEach(d => { const key = d.n.toLowerCase(); if (!m.has(key)) m.set(key, {name: d.n, count: 0, last: d.a ?? null}); });
+  return [...m.values()].sort((a, b) => b.count - a.count).slice(0, 12);
+}
+function parseAmt(s){
+  s = String(s || '').replace(/[$,\s]/g, '');
+  if (!/^(\d+\.?\d*|\.\d+)$/.test(s)) return null;
+  const n = parseFloat(s);
+  return n > 0 ? Math.round(n * 100) : null;
+}
+function addSheet(acct){
+  const bo = acct === 'bo';
+  const chips = labelChips(acct);
+  openSheet(`
+    <div class="sheet-h">${bo ? 'bofa' : 'card'} · ${sel === todayISO() ? 'today' : short(sel)}</div>
+    <div class="amt-wrap ${bo ? 'bo' : ''}"><span>$</span><input id="amt" inputmode="decimal" placeholder="0.00" autocomplete="off" enterkeyhint="done"></div>
+    <input id="lbl" class="field" placeholder="what for? (optional)" autocomplete="off" autocapitalize="none" enterkeyhint="done">
+    <div class="chips">${chips.map(c => `<button class="chip" data-l="${esc(c.name)}" data-a="${c.last ?? ''}">${esc(c.name)}${c.last != null ? ` <small>${fmt$(c.last)}</small>` : ''}</button>`).join('')}</div>
+    <button class="primary ${bo ? 'bo' : ''}" id="ok">add</button>`, b => {
+    const amt = b.querySelector('#amt'), lbl = b.querySelector('#lbl');
+    amt.focus();
+    b.querySelectorAll('.chip').forEach(ch => ch.onclick = () => {
+      b.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === ch));
+      lbl.value = ch.dataset.l;
+      if (!amt.value && ch.dataset.a) amt.value = (ch.dataset.a / 100).toFixed(2);
+      amt.focus();
+    });
+    amt.oninput = () => amt.classList.remove('bad');
+    const go = () => {
+      const c = parseAmt(amt.value);
+      if (c == null) { amt.classList.add('bad'); amt.focus(); return; }
+      ensure(sel)[acct].push({a: c, n: lbl.value.trim().toLowerCase()});
+      save(); closeSheet(); render();
+      toast(`${bo ? 'bofa' : 'card'} ${fmt$(c)} added`);
+    };
+    b.querySelector('#ok').onclick = go;
+    amt.onkeydown = lbl.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } };
+  });
+}
+
+const mealKey = v => v.toLowerCase().replace(/[^a-z0-9]/g, '');
+function mealChips(){
+  const m = new Map();
+  for (const k in S.days) for (const f of ['m1', 'm2']) {
+    const v = (S.days[k][f] || '').trim();
+    if (!v || v === '-') continue;
+    const key = mealKey(v); if (!key) continue;
+    const o = m.get(key) || {c: 0, names: new Map()};
+    o.c++; o.names.set(v, (o.names.get(v) || 0) + 1); m.set(key, o);
+  }
+  if (!m.size) return DEF_MEALS;
+  return [...m.values()].sort((a, b) => b.c - a.c).slice(0, 14)
+    .map(o => [...o.names.entries()].sort((a, b) => b[1] - a[1])[0][0]);
+}
+function mealSheet(f){
+  const cur = get(sel)[f] || '';
+  openSheet(`
+    <div class="sheet-h">meal ${f === 'm1' ? 1 : 2} · ${sel === todayISO() ? 'today' : short(sel)}</div>
+    <div class="chips big">${mealChips().map(c => `<button class="chip ${c === cur ? 'on' : ''}" data-v="${esc(c)}">${esc(c)}</button>`).join('')}
+      <button class="chip dash ${cur === '-' ? 'on' : ''}" data-v="-">— skipped</button></div>
+    <input id="mv" class="field" placeholder="or type it…" value="${esc(cur === '-' ? '' : cur)}" autocapitalize="none" autocomplete="off" enterkeyhint="done">
+    <div class="row2"><button class="ghostbtn" id="clr">clear</button><button class="primary" id="ok">save</button></div>`, b => {
+    const set = v => { ensure(sel)[f] = v.toLowerCase(); save(); closeSheet(); render(); };
+    b.querySelectorAll('.chip').forEach(ch => ch.onclick = () => set(ch.dataset.v));
+    const mv = b.querySelector('#mv');
+    b.querySelector('#ok').onclick = () => set(mv.value.trim());
+    mv.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); set(mv.value.trim()); } };
+    b.querySelector('#clr').onclick = () => set('');
+  });
+}
+
+function ago(ts){ const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; }
+function dataSheet(){
+  const n = Object.keys(S.days).length;
+  const ks = Object.keys(S.days).sort();
+  openSheet(`
+    <div class="sheet-h">your data</div>
+    <p class="muted small" style="margin:0 0 6px">${n ? `${n} days stored on this phone (${short(ks[0])}, ${ks[0].slice(0, 4)} – ${short(ks[ks.length - 1])}).` : 'nothing stored yet.'}
+      ${S.meta.lastBackup ? 'last backup ' + ago(S.meta.lastBackup) + '.' : 'no backup yet.'}</p>
+    <button class="primary" id="bk">back up</button>
+    <button class="secondary" id="csv">export csv for sheets</button>
+    <button class="secondary" id="imp">import backup or csv</button>
+    <p class="muted small">everything lives only on this phone. back up now and then (save it to files or icloud drive) in case the phone is lost or the app is removed.</p>
+    <button class="danger" id="wipe">erase everything</button>`, b => {
+    b.querySelector('#bk').onclick = async () => {
+      const ok = await shareOrDownload(`life-backup-${todayISO()}.json`, JSON.stringify(S), 'application/json');
+      if (ok) { S.meta.lastBackup = Date.now(); saveNow(); closeSheet(); render(); toast('backup saved'); }
+    };
+    b.querySelector('#csv').onclick = () => shareOrDownload(`life-${todayISO()}.csv`, toCSV(), 'text/csv');
+    b.querySelector('#imp').onclick = () => $('#fileIn').click();
+    b.querySelector('#wipe').onclick = () => {
+      if (!n) return;
+      if (confirm(`erase all ${n} days from this phone? this can’t be undone.`) && confirm('really erase everything? make sure you have a backup.')) {
+        S = {v: 1, days: {}, meta: {}}; saveNow(); closeSheet(); render(); toast('erased');
+      }
+    };
+  });
+}
+
+/* ---------- import / export ---------- */
+async function shareOrDownload(name, text, mime){
+  const file = new File([text], name, {type: mime});
+  if (navigator.canShare && navigator.canShare({files: [file]})) {
+    try { await navigator.share({files: [file]}); return true; }
+    catch (e) { if (e && e.name === 'AbortError') return false; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = name; document.body.append(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  return true;
+}
+const csvCell = v => { v = String(v ?? ''); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+const itemsStr = arr => (arr || []).some(e => e.n) ? arr.map(e => (e.n ? e.n + ' ' : '') + '$' + (e.a / 100).toFixed(2)).join('; ') : '';
+const spendCell = arr => { arr = arr || []; if (!arr.length) return ''; if (arr.length === 1) return (arr[0].a / 100).toFixed(2);
+  return '=' + arr.map((e, i) => (e.a < 0 ? '-' : i ? '+' : '') + (Math.abs(e.a) / 100).toFixed(2).replace(/\.?0+$/, '')).join(''); };
+function toCSV(){
+  const H = ['date', 'sleep', 'workout', 'meal 1', 'meal 2', 'mood', 'grateful', 'weight', 'cc spend', 'bofa spend', 'cc items', 'bofa items', 'notes'];
+  const out = [H.join(',')];
+  Object.keys(S.days).sort().forEach(k => {
+    const d = S.days[k];
+    out.push([k, d.s ?? '', d.wo ? 'TRUE' : 'FALSE', d.m1 || '', d.m2 || '', d.mood || '', d.gr || '', d.w ?? '',
+      spendCell(d.cc), spendCell(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || ''].map(csvCell).join(','));
+  });
+  return '﻿' + out.join('\r\n');
+}
+function parseDelimited(text, dl){
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"' && f === '') q = true;
+    else if (c === dl) { row.push(f); f = ''; }
+    else if (c === '\n') { row.push(f); rows.push(row); row = []; f = ''; }
+    else if (c !== '\r') f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+const MONTHS = MON.map(m => m.toLowerCase());
+function parseDay(s){
+  s = String(s || '').trim().toLowerCase(); let m;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/))) { const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; return `${y}-${pad(+m[1])}-${pad(+m[2])}`; }
+  if ((m = s.match(/([a-z]+)\s+(\d{1,2}),?\s+(\d{4})/))) { const mi = MONTHS.findIndex(x => x.startsWith(m[1].slice(0, 3))); if (mi >= 0) return `${m[3]}-${pad(mi + 1)}-${pad(+m[2])}`; }
+  return null;
+}
+const money = s => { s = String(s || '').replace(/[$,\s]/g, ''); if (!s || s === '-') return null; const n = parseFloat(s); return isNaN(n) ? null : Math.round(n * 100); };
+function parseItems(s, total){
+  if (!s || !s.trim()) return null;
+  const out = [];
+  for (const part of s.split(/;\s*/)) {
+    const m = part.trim().match(/^(.*?)\s*\$(-?[\d,]+(?:\.\d+)?)$/);
+    if (!m) return null;
+    out.push({n: m[1].trim(), a: money(m[2])});
+  }
+  return out.length && (total == null || sum(out) === total) ? out : null;
+}
+function parseFormula(s){
+  s = String(s || '').replace(/\s/g, '');
+  if (!/^=[+-]?\$?[\d,.]+([+-]\$?[\d,.]+)*$/.test(s)) return null;
+  return (s.slice(1).match(/[+-]?[^+-]+/g) || []).map(t => ({a: (t[0] === '-' ? -1 : 1) * money(t.replace(/^[+-]/, '')), n: ''}));
+}
+function fromCSV(text){
+  const first = text.split('\n').find(l => l.trim()) || '';
+  const dl = first.includes('\t') && !first.includes(',') ? '\t' : ',';
+  const rows = parseDelimited(text, dl);
+  const hi = rows.findIndex(r => { const l = r.map(x => x.trim().toLowerCase()); return l.includes('date') && (l.some(x => x.startsWith('sleep')) || l.includes('notes')); });
+  if (hi < 0) throw new Error('couldn’t find a header row with “date”.');
+  const H = rows[hi].map(h => h.trim().toLowerCase());
+  const col = (...n) => H.findIndex(h => n.includes(h));
+  const C = {date: col('date'), s: col('sleep (hours)', 'sleep'), st: col('strech', 'stretch'), li: col('lift'), ro: col('row'), wo: col('workout'),
+    m1: col('meal 1'), m2: col('meal 2'), mood: col('mood'), gr: col('grateful'), w: col('weight (lbs)', 'weight'),
+    cc: col('cc spend', 'card spend', 'card'), bo: col('bofa spend', 'bofa'), cci: col('cc items', 'card items'), boi: col('bofa items'), notes: col('notes')};
+  const out = {};
+  for (const r of rows.slice(hi + 1)) {
+    const cell = i => i >= 0 ? (r[i] ?? '').trim() : '';
+    const k = parseDay(cell(C.date)); if (!k) continue;
+    const d = {cc: [], bo: []};
+    const s = parseFloat(cell(C.s)); if (!isNaN(s)) d.s = s;
+    if ([C.st, C.li, C.ro, C.wo].some(i => /^true$/i.test(cell(i)))) d.wo = true;
+    for (const f of ['m1', 'm2', 'mood', 'gr', 'notes']) { const v = cell(C[f]); if (v) d[f] = v; }
+    const w = parseFloat(cell(C.w)); if (!isNaN(w) && w > 0) d.w = w;
+    for (const [acct, ic] of [['cc', 'cci'], ['bo', 'boi']]) {
+      const raw = cell(C[acct]);
+      const terms = parseFormula(raw);
+      const tot = terms ? sum(terms) : money(raw);
+      const items = parseItems(cell(C[ic]), tot);
+      if (items) d[acct] = items; else if (terms) d[acct] = terms; else if (tot) d[acct] = [{a: tot, n: ''}];
+    }
+    if (!blank(d)) out[k] = d;
+  }
+  return out;
+}
+$('#fileIn').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  const txt = (await f.text()).replace(/^﻿/, '');
+  let incoming;
+  try {
+    if (/^\s*\{/.test(txt)) {
+      const o = JSON.parse(txt);
+      if (!o || typeof o.days !== 'object') throw new Error('that isn’t a life backup.');
+      incoming = o.days;
+    } else incoming = fromCSV(txt);
+  } catch (err) { alert('couldn’t read that file. ' + err.message); return; }
+  const ks = Object.keys(incoming).filter(k => ISO_RE.test(k));
+  if (!ks.length) { alert('no days found in that file.'); return; }
+  const overlap = ks.filter(k => S.days[k]).length;
+  if (!confirm(`import ${ks.length} days${overlap ? `? ${overlap} of them already exist here and will be replaced by the file’s version.` : '?'}`)) return;
+  for (const k of ks) { const d = incoming[k]; d.cc = Array.isArray(d.cc) ? d.cc : []; d.bo = Array.isArray(d.bo) ? d.bo : []; S.days[k] = d; }
+  saveNow(); closeSheet(); render(); toast(`imported ${ks.length} days`);
+};
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act],[data-view]'); if (!el || sheet.contains(el)) return;
+  if (el.dataset.view) {
+    if (el.dataset.view === 'data') return dataSheet();
+    view = el.dataset.view;
+    if (view === 'month' && el.classList.contains('tab')) selMonth = sel.slice(0, 7);
+    render(); scrollTo(0, 0); return;
+  }
+  const act = el.dataset.act, t = todayISO();
+  if (act === 'prev') { sel = addDays(sel, -1); render(); }
+  else if (act === 'next') { if (sel < t) { sel = addDays(sel, 1); render(); } }
+  else if (act === 'gotoday') { sel = t; render(); }
+  else if (act === 'add') addSheet(el.dataset.acct);
+  else if (act === 'meal') mealSheet(el.dataset.f);
+  else if (act === 'del') {
+    const d = ensure(sel), arr = d[el.dataset.acct], i = +el.dataset.i, it = arr[i];
+    if (it && confirm(`remove ${fmt$(it.a)}${it.n ? ' (' + it.n + ')' : ''}?`)) { arr.splice(i, 1); save(); render(); }
+  }
+  else if (act === 'sleep') { const d = ensure(sel); d.s = d.s == null ? 7 : Math.max(0, Math.min(14, d.s + +el.dataset.n)); save(); render(); }
+  else if (act === 'wo') { const d = ensure(sel); d.wo = !d.wo; save(); render(); }
+  else if (act === 'mprev') { selMonth = addMonths(selMonth, -1); render(); }
+  else if (act === 'mnext') { if (selMonth < t.slice(0, 7)) { selMonth = addMonths(selMonth, 1); render(); } }
+  else if (act === 'goday') { const k = el.dataset.k; if (k <= t) { sel = k; view = 'today'; render(); scrollTo(0, 0); } }
+  else if (act === 'data') dataSheet();
+});
+main.addEventListener('input', e => {
+  const tg = e.target;
+  if (tg.id === 'q') { q = tg.value; $('#hlist').innerHTML = histList(); return; }
+  const f = tg.dataset.f; if (!f) return;
+  const d = ensure(sel);
+  if (f === 'w') { const v = tg.value.trim(), n = parseFloat(v); d.w = v === '' || isNaN(n) ? null : n; }
+  else d[f] = tg.value.toLowerCase();
+  if (tg.tagName === 'TEXTAREA') autosize(tg);
+  save();
+});
+
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
+
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+render();
+})();
+</script>
+</body>
+</html>
