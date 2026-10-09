@@ -179,6 +179,9 @@ nav .in{display:flex;width:100%;max-width:560px}
 .toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--bg);
   padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:all .2s;z-index:60;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%)}
+.syncline{display:block;margin:-6px auto 10px;font-size:12px;color:var(--muted);padding:2px 10px}
+.syncline.err{color:var(--danger)}
+.sync-h{font-size:15px;font-weight:700;margin:22px 0 8px;padding-top:16px;border-top:1px solid var(--line)}
 .backup-nudge{display:block;width:100%;text-align:center;font-size:13px;color:var(--muted);padding:6px 0}
 .backup-nudge b{color:var(--accent)}
 </style>
@@ -232,12 +235,12 @@ if (!S || typeof S.days !== 'object' || !S.days) S = {v: 1, days: {}, meta: {}};
 S.meta = S.meta || {};
 let saveT = null;
 function save(){ clearTimeout(saveT); saveT = setTimeout(saveNow, 250); }
-function saveNow(){
-  clearTimeout(saveT); saveT = null;
+function persist(){
   for (const k in S.days) if (blank(S.days[k])) delete S.days[k];
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
   catch (e) { toast('couldn’t save — back up from data'); }
 }
+function saveNow(){ clearTimeout(saveT); saveT = null; persist(); syncSoon(); }
 addEventListener('pagehide', () => { if (saveT) saveNow(); });
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 
@@ -246,7 +249,8 @@ function blank(d){
     !(d.cc && d.cc.length) && !(d.bo && d.bo.length) && !d.notes);
 }
 const get = k => S.days[k] || {};
-function ensure(k){ const d = S.days[k] || (S.days[k] = {}); d.cc = d.cc || []; d.bo = d.bo || []; return d; }
+function ensure(k){ const d = S.days[k] || (S.days[k] = {}); d.cc = d.cc || []; d.bo = d.bo || []; markDirty(k); return d; }
+function markDirty(k){ const d = S.days[k]; if (d) d.u = Date.now(); (S.meta.dirty = S.meta.dirty || {})[k] = 1; }
 
 /* ---------- view state ---------- */
 let view = 'today', sel = todayISO(), lastToday = sel, selMonth = sel.slice(0, 7), q = '';
@@ -254,7 +258,7 @@ function rollover(){
   const t = todayISO();
   if (t !== lastToday) { if (sel === lastToday) sel = t; if (selMonth === lastToday.slice(0, 7)) selMonth = t.slice(0, 7); lastToday = t; render(); }
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { if (saveT) saveNow(); } else rollover(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (saveT) saveNow(); } else { rollover(); sync(); } });
 
 function render(){
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.view === view));
@@ -286,6 +290,7 @@ function todayHTML(){
       <div class="when-d">${MON[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}</div></div>
     <button class="icon" data-act="next" aria-label="next day" ${sel >= t ? 'disabled' : ''}>›</button>
   </header>
+  ${syncOn() ? `<button class="syncline" id="syncline" data-act="syncnow">${syncLabel()}</button>` : ''}
   ${sel !== t ? '<button class="jump" data-act="gotoday">back to today</button>' : ''}
 
   <section class="card spend">
@@ -331,7 +336,7 @@ function todayHTML(){
     <h2>notes</h2>
     <textarea data-f="notes" rows="3" placeholder="what happened today…" autocapitalize="none">${esc(d.notes || '')}</textarea>
   </section>
-  ${nDays && bkAge > 30 ? `<button class="backup-nudge" data-act="data">${S.meta.lastBackup ? 'last backup ' + Math.floor(bkAge) + ' days ago' : 'no backup yet'} · <b>back up</b></button>` : ''}`;
+  ${nDays && bkAge > 30 && !syncOn() ? `<button class="backup-nudge" data-act="data">${S.meta.lastBackup ? 'last backup ' + Math.floor(bkAge) + ' days ago' : 'no backup yet'} · <b>back up</b></button>` : ''}`;
 }
 
 /* ---------- month ---------- */
@@ -535,13 +540,31 @@ function dataSheet(){
   const ks = Object.keys(S.days).sort();
   openSheet(`
     <div class="sheet-h">your data</div>
-    <p class="muted small" style="margin:0 0 6px">${n ? `${n} days stored on this phone (${short(ks[0])}, ${ks[0].slice(0, 4)} – ${short(ks[ks.length - 1])}).` : 'nothing stored yet.'}
+    <p class="muted small" style="margin:0 0 6px">${n ? `${n} days stored on this device (${short(ks[0])}, ${ks[0].slice(0, 4)} – ${short(ks[ks.length - 1])}).` : 'nothing stored yet.'}
       ${S.meta.lastBackup ? 'last backup ' + ago(S.meta.lastBackup) + '.' : 'no backup yet.'}</p>
     <button class="primary" id="bk">back up</button>
     <button class="secondary" id="csv">export csv for sheets</button>
     <button class="secondary" id="imp">import backup or csv</button>
-    <p class="muted small">everything lives only on this phone. back up now and then (save it to files or icloud drive) in case the phone is lost or the app is removed.</p>
-    <button class="danger" id="wipe">erase everything</button>`, b => {
+    <p class="muted small">${syncOn() ? 'your days also save to your google sheet, so this device can be replaced anytime.' : 'everything lives only on this device. back up now and then (save it to files or icloud drive), or turn on sync below.'}</p>
+    <div class="sync-h">sync with google sheet</div>
+    ${syncOn() ? `<p class="muted small" style="margin:0 0 6px">on · ${esc(syncLabel())}</p>
+      <button class="secondary" id="snow">sync now</button>
+      <button class="ghostbtn" id="soff">turn off sync on this device</button>` : `
+      <input id="surl" class="field" placeholder="web app url (…/exec)" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <input id="skey" class="field" placeholder="sync key" autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button class="primary" id="sgo">connect</button>`}
+    <button class="danger" id="wipe">erase this device</button>`, b => {
+    const g = id => b.querySelector(id);
+    if (g('#sgo')) g('#sgo').onclick = async () => {
+      const url = g('#surl').value.trim(), key = g('#skey').value.trim();
+      if (!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(url)) { alert('that doesn’t look like an apps script web app url. it should start with https://script.google.com/ and end with /exec'); return; }
+      if (!key) { alert('paste the sync key too.'); return; }
+      g('#sgo').textContent = 'connecting…'; g('#sgo').disabled = true;
+      const ok = await connectSync(url, key);
+      if (ok) { closeSheet(); render(); toast('sync is on'); } else { g('#sgo').textContent = 'connect'; g('#sgo').disabled = false; alert('couldn’t connect: ' + (syncErr || 'check the url and key')); }
+    };
+    if (g('#snow')) g('#snow').onclick = () => { closeSheet(); sync(); };
+    if (g('#soff')) g('#soff').onclick = () => { if (confirm('turn off sync on this device? your sheet keeps everything.')) { delete S.meta.sync; persist(); closeSheet(); render(); } };
     b.querySelector('#bk').onclick = async () => {
       const ok = await shareOrDownload(`life-backup-${todayISO()}.json`, JSON.stringify(S), 'application/json');
       if (ok) { S.meta.lastBackup = Date.now(); saveNow(); closeSheet(); render(); toast('backup saved'); }
@@ -550,8 +573,8 @@ function dataSheet(){
     b.querySelector('#imp').onclick = () => $('#fileIn').click();
     b.querySelector('#wipe').onclick = () => {
       if (!n) return;
-      if (confirm(`erase all ${n} days from this phone? this can’t be undone.`) && confirm('really erase everything? make sure you have a backup.')) {
-        S = {v: 1, days: {}, meta: {}}; saveNow(); closeSheet(); render(); toast('erased');
+      if (confirm(`erase all ${n} days from this device?${syncOn() ? ' your google sheet keeps its copy.' : ' this can’t be undone.'}`) && confirm('really erase this device?')) {
+        S = {v: 1, days: {}, meta: {sync: S.meta.sync}}; persist(); closeSheet(); render(); toast('erased');
       }
     };
   });
@@ -667,8 +690,8 @@ $('#fileIn').onchange = async e => {
   if (!ks.length) { alert('no days found in that file.'); return; }
   const overlap = ks.filter(k => S.days[k]).length;
   if (!confirm(`import ${ks.length} days${overlap ? `? ${overlap} of them already exist here and will be replaced by the file’s version.` : '?'}`)) return;
-  for (const k of ks) { const d = incoming[k]; d.cc = Array.isArray(d.cc) ? d.cc : []; d.bo = Array.isArray(d.bo) ? d.bo : []; S.days[k] = d; }
-  saveNow(); closeSheet(); render(); toast(`imported ${ks.length} days`);
+  for (const k of ks) { const d = incoming[k]; d.cc = Array.isArray(d.cc) ? d.cc : []; d.bo = Array.isArray(d.bo) ? d.bo : []; S.days[k] = d; markDirty(k); }
+  saveNow(); closeSheet(); render(); toast(`imported ${ks.length} days`); sync();
 };
 
 /* ---------- events ---------- */
@@ -696,6 +719,7 @@ document.addEventListener('click', e => {
   else if (act === 'mnext') { if (selMonth < t.slice(0, 7)) { selMonth = addMonths(selMonth, 1); render(); } }
   else if (act === 'goday') { const k = el.dataset.k; if (k <= t) { sel = k; view = 'today'; render(); scrollTo(0, 0); } }
   else if (act === 'data') dataSheet();
+  else if (act === 'syncnow') sync();
 });
 main.addEventListener('input', e => {
   const tg = e.target;
@@ -711,8 +735,109 @@ main.addEventListener('input', e => {
 let toastT;
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
 
+/* ---------- sync with google sheet ---------- */
+let syncing = false, again = false, syncT = null, syncState = '', syncErr = '', remoteU = {};
+function syncOn(){ return !!(S.meta.sync && S.meta.sync.url && S.meta.sync.key); }
+function syncSoon(ms){ if (!syncOn()) return; clearTimeout(syncT); syncT = setTimeout(sync, ms == null ? 1500 : ms); }
+function syncLabel(){
+  if (syncState === 'syncing') return 'syncing…';
+  if (syncState === 'offline') return 'offline · will sync';
+  if (syncState === 'error') return 'sync problem · tap to retry';
+  if (S.meta.lastSync) { const d = new Date(S.meta.lastSync); return 'synced ' + (d.getHours() % 12 || 12) + ':' + pad(d.getMinutes()) + (d.getHours() < 12 ? 'am' : 'pm'); }
+  return 'not synced yet';
+}
+function setSync(st, err){
+  syncState = st; syncErr = err || '';
+  const el = document.getElementById('syncline');
+  if (el) { el.textContent = syncLabel(); el.classList.toggle('err', st === 'error'); }
+}
+const numOrNull = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+const spendVal = arr => { const c = spendCell(arr); return c === '' || String(c).startsWith('=') ? c : +c; };
+function toRow(k, d){
+  return [k, d.s ?? '', !!d.wo, d.m1 || '', d.m2 || '', d.mood || '', d.gr || '', d.w ?? '',
+    spendVal(d.cc), spendVal(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || '', d.u || Date.now()];
+}
+function fromRow(r){
+  const c = i => (r[i] == null ? '' : r[i]);
+  const d = {cc: [], bo: []};
+  const s = numOrNull(c(1)); if (s != null) d.s = s;
+  if (c(2) === true || /^true$/i.test(String(c(2)))) d.wo = true;
+  [['m1', 3], ['m2', 4], ['mood', 5], ['gr', 6], ['notes', 12]].forEach(([f, i]) => { const v = String(c(i)).trim(); if (v) d[f] = v; });
+  const w = numOrNull(c(7)); if (w != null && w > 0) d.w = w;
+  [['cc', 8, 10], ['bo', 9, 11]].forEach(([a, i, j]) => {
+    const raw = String(c(i)).trim();
+    const terms = parseFormula(raw);
+    const tot = terms ? sum(terms) : money(raw);
+    const items = parseItems(String(c(j)), tot);
+    if (items) d[a] = items; else if (terms) d[a] = terms; else if (tot) d[a] = [{a: tot, n: ''}];
+  });
+  d.u = +c(13) || 0;
+  return d;
+}
+async function sync(){
+  if (!syncOn()) return false;
+  if (syncing) { again = true; return false; }
+  if (!navigator.onLine) { setSync('offline'); return false; }
+  syncing = true; again = false; clearTimeout(syncT);
+  if (saveT) { clearTimeout(saveT); saveT = null; persist(); }
+  setSync('syncing');
+  const dirty = Object.keys(S.meta.dirty || {});
+  const sent = {};
+  const rows = dirty.map(k => { const d = S.days[k] || {}; const row = toRow(k, d); sent[k] = row[13]; return row; });
+  let ok = false;
+  try {
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 45000);
+    const res = await fetch(S.meta.sync.url, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({key: S.meta.sync.key, rows}), signal: ctl.signal, redirect: 'follow'});
+    clearTimeout(tm);
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || 'sync failed');
+    for (const k of dirty) { const d = S.days[k]; if (!d || (d.u || 0) <= sent[k]) delete S.meta.dirty[k]; }
+    let changed = false; remoteU = {};
+    for (const r of j.rows || []) {
+      const k = String(r[0]).trim(); if (!ISO_RE.test(k)) continue;
+      const rd = fromRow(r); remoteU[k] = rd.u;
+      if (S.meta.dirty[k]) continue;
+      const ld = S.days[k];
+      if (!ld ? !blank(rd) : (rd.u || 0) > (ld.u || 0)) { S.days[k] = rd; changed = true; }
+    }
+    S.meta.lastSync = Date.now();
+    persist();
+    setSync('ok'); ok = true;
+    if (changed) {
+      const a = document.activeElement;
+      const typing = a && main.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.id !== 'q';
+      if (!typing) render();
+    }
+  } catch (e) {
+    setSync(e && (e.name === 'AbortError' || e.name === 'TypeError') ? 'offline' : 'error', e && e.message);
+  } finally {
+    syncing = false;
+    if (again) syncSoon(300);
+  }
+  return ok;
+}
+async function connectSync(url, key){
+  const prev = S.meta.sync;
+  S.meta.sync = {url, key}; S.meta.dirty = {};
+  const ok = await sync();               // pull first: anything newer in the sheet wins
+  if (!ok) { S.meta.sync = prev; persist(); return false; }
+  for (const k in S.days) {               // then send up whatever the sheet doesn't have yet
+    const d = S.days[k];
+    if (!(k in remoteU)) { if (!d.u) d.u = Date.now(); S.meta.dirty[k] = 1; }
+    else if ((d.u || 0) > remoteU[k]) S.meta.dirty[k] = 1;
+  }
+  persist();
+  if (Object.keys(S.meta.dirty).length) await sync();
+  return true;
+}
+addEventListener('online', () => sync());
+addEventListener('focus', () => { if (!syncing && Date.now() - (S.meta.lastSync || 0) > 5000) sync(); });
+setInterval(() => { if (!document.hidden) sync(); }, 60000);
+
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
 render();
+sync();
 })();
 </script>
 </body>
