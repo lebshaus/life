@@ -469,16 +469,21 @@ if (window.visualViewport) {
   visualViewport.addEventListener('resize', fit); visualViewport.addEventListener('scroll', fit);
 }
 
+// bofa quick-pick buttons: just the recurring bills. mortgage and at&t show their last amount;
+// the utilities swing month to month, so they show the average of the last 12 payments
+const LAST_AMT_BILLS = ['mortgage', 'at&t fiber'];
 function labelChips(acct){
-  const m = new Map();
+  const st = {};
+  BILLS.forEach(n => st[n] = []);
   Object.keys(S.days).sort().forEach(k => (S.days[k][acct] || []).forEach(e => {
-    if (!e.n) return;
-    const key = e.n.trim().toLowerCase();
-    const o = m.get(key) || {name: e.n.trim(), count: 0, last: null};
-    o.count++; o.last = e.a; m.set(key, o);
+    const n = (e.n || '').trim().toLowerCase(); if (st[n]) st[n].push(e.a);
   }));
-  DEF[acct].forEach(d => { const key = d.n.toLowerCase(); if (!m.has(key)) m.set(key, {name: d.n, count: 0, last: d.a ?? null}); });
-  return [...m.values()].sort((a, b) => b.count - a.count).slice(0, 12);
+  return BILLS.map(n => {
+    const a = st[n], recent = a.slice(-12);
+    const useAvg = !LAST_AMT_BILLS.includes(n);
+    const show = !a.length ? null : useAvg ? Math.round(recent.reduce((x, y) => x + y, 0) / recent.length) : a[a.length - 1];
+    return {name: n, show, avg: useAvg};
+  });
 }
 function parseAmt(s){
   s = String(s || '').replace(/[$,\s]/g, '');
@@ -494,22 +499,22 @@ function addSheet(acct, opt){
     <div class="sheet-h">${bo ? 'bofa' : 'card'} · ${sel === todayISO() ? 'today' : short(sel)}</div>
     <div class="amt-wrap ${bo ? 'bo' : ''}"><span>$</span><input id="amt" inputmode="decimal" placeholder="0.00" autocomplete="off" enterkeyhint="done"></div>
     <input id="lbl" class="field" placeholder="what for? (optional)" autocomplete="off" autocapitalize="none" enterkeyhint="done">
-    ${chips.length ? `<div class="chips bo">${chips.map(c => `<button class="chip" data-l="${esc(c.name)}" data-a="${c.last ?? ''}">${esc(c.name)}${c.last != null ? ` <small>${fmt$(c.last)}</small>` : ''}</button>`).join('')}</div>` : ''}
+    ${chips.length ? `<div class="chips bo">${chips.map(c => `<button class="chip" data-l="${esc(c.name)}" data-a="${c.show ?? ''}" data-avg="${c.avg ? 1 : ''}">${esc(c.name)}${c.show != null ? ` <small>${c.avg ? 'avg ' : ''}${fmt$(c.show)}</small>` : ''}</button>`).join('')}</div>` : ''}
     <button class="primary ${bo ? 'bo' : 'cc'}" id="ok">add</button>
 `, b => {
     const amt = b.querySelector('#amt'), lbl = b.querySelector('#lbl');
-    // fixed bills (mortgage) fill in their amount; everything else just shows last time's amount as a hint
-    const pick = (label, last) => {
+    // fixed bills (mortgage) fill in their amount; everything else shows last/avg amount as a hint
+    const pick = (label, amtHint, isAvg) => {
       b.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x.dataset.l === label));
       lbl.value = label;
-      if (last) {
-        if (FIXED_BILLS.includes(label)) amt.value = (last / 100).toFixed(2);
-        else if (!amt.value) amt.placeholder = 'last ' + (last / 100).toFixed(2);
+      if (amtHint) {
+        if (FIXED_BILLS.includes(label)) amt.value = (amtHint / 100).toFixed(2);
+        else if (!amt.value) amt.placeholder = (isAvg ? 'avg ' : 'last ') + (amtHint / 100).toFixed(2);
       }
       amt.focus();
     };
-    b.querySelectorAll('.chip').forEach(ch => ch.onclick = () => pick(ch.dataset.l, +ch.dataset.a || 0));
-    if (opt.label) pick(opt.label, opt.last || 0); else amt.focus();
+    b.querySelectorAll('.chip').forEach(ch => ch.onclick = () => pick(ch.dataset.l, +ch.dataset.a || 0, !!ch.dataset.avg));
+    if (opt.label) pick(opt.label, opt.hint || 0, opt.isAvg); else amt.focus();
     if (opt.amount) amt.value = (opt.amount / 100).toFixed(2);
     amt.oninput = () => amt.classList.remove('bad');
     const go = () => {
@@ -763,7 +768,7 @@ document.addEventListener('click', e => {
   else if (act === 'gotoday') { sel = t; render(); }
   else if (act === 'add') addSheet(el.dataset.acct);
   else if (act === 'sub') { const x = SUBS.find(y => y.n === el.dataset.n); if (x) addSheet('cc', {label: x.n, amount: x.a}); }
-  else if (act === 'bill') { const b = billsDue().find(x => x.n === el.dataset.n); if (b) addSheet('bo', {label: b.n, last: b.a}); }
+  else if (act === 'bill') { const c = labelChips('bo').find(x => x.name === el.dataset.n); if (c) addSheet('bo', {label: c.name, hint: c.show, isAvg: c.avg}); }
   else if (act === 'meal') mealSheet(el.dataset.f);
   else if (act === 'del') {
     const d = ensure(sel), arr = d[el.dataset.acct], i = +el.dataset.i, it = arr[i];
