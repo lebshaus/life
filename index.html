@@ -395,9 +395,6 @@ function monthHTML(){
   const cap = Math.max(15000, nz.length ? nz[Math.floor(nz.length * 0.9)] : 0);
   const avgDay = elapsed ? cc / elapsed : 0;
 
-  const spotMap = new Map();
-  days.forEach(([, d]) => ['m1', 'm2'].forEach(f => { const v = (d[f] || '').trim(); if (v && v !== '-') { const k = mealKey(v); const o = spotMap.get(k) || {n: v, c: 0}; o.c++; spotMap.set(k, o); } }));
-  const spots = [...spotMap.values()].sort((a, b) => b.c - a.c).slice(0, 6);
 
   const ccList = days.flatMap(([k, d]) => (d.cc || []).map(e => ({k, e})));
   const boList = days.flatMap(([k, d]) => (d.bo || []).map(e => ({k, e, notes: d.notes})));
@@ -424,17 +421,15 @@ function monthHTML(){
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
 
-  ${spots.length ? `<section class="card"><h2>where you ate</h2><div class="spots">${spots.map(s => `<span class="spot">${esc(s.n)}<b>${s.c}</b></span>`).join('')}</div></section>` : ''}
+  ${bigDays.length ? `<section class="card"><h2>biggest card days</h2><ul class="list">${bigDays.map(o => `
+    <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
+      <span class="t">${esc([...new Set((o.d.cc || []).map(e => (e.n || '').trim().toLowerCase()).filter(Boolean))].join(', ')) || '<small>no label</small>'}</span>
+      <span class="a">${fmt$(o.v)}</span></button></li>`).join('')}</ul></section>` : ''}
 
   ${boList.length ? `<section class="card" id="bolist"><h2>bofa</h2><ul class="list">${boList.map(o => `
     <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
       <span class="t">${o.e.n ? esc(o.e.n) : `<small>${esc(o.notes || 'no label')}</small>`}</span>
       <span class="a">${fmt$(o.e.a)}</span></button></li>`).join('')}</ul></section>` : ''}
-
-  ${bigDays.length ? `<section class="card"><h2>biggest card days</h2><ul class="list">${bigDays.map(o => `
-    <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
-      <span class="t">${esc([...new Set((o.d.cc || []).map(e => (e.n || '').trim().toLowerCase()).filter(Boolean))].join(', ')) || '<small>no label</small>'}</span>
-      <span class="a">${fmt$(o.v)}</span></button></li>`).join('')}</ul></section>` : ''}
 
   ${ccList.length ? `<section class="card" id="cclist"><h2>card<span class="h2n">${ccList.length} charges</span></h2><ul class="list">${ccList.map(o => `
     <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
