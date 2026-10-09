@@ -511,13 +511,17 @@ function mealChips(){
     const v = (S.days[k][f] || '').trim();
     if (!v || v === '-') continue;
     const key = mealKey(v); if (!key) continue;
-    const o = m.get(key) || {c: 0, names: new Map()};
+    const o = m.get(key) || {k: key, c: 0, names: new Map()};
     o.c++; o.names.set(v, (o.names.get(v) || 0) + 1); m.set(key, o);
   }
   if (!m.size) return DEF_MEALS;
-  return [...m.values()].sort((a, b) => b.c - a.c).slice(0, 14)
-    .map(o => [...o.names.entries()].sort((a, b) => b[1] - a[1])[0][0]);
+  // jersey mike's is a wednesday thing: only offer it on wednesdays, and put it first then
+  const wed = fromISO(sel).getDay() === 3;
+  const list = [...m.values()].filter(o => wed || !WED_ONLY.includes(o.k)).sort((a, b) => b.c - a.c);
+  if (wed) list.sort((a, b) => (WED_ONLY.includes(b.k) ? 1 : 0) - (WED_ONLY.includes(a.k) ? 1 : 0));
+  return list.slice(0, 14).map(o => [...o.names.entries()].sort((a, b) => b[1] - a[1])[0][0]);
 }
+const WED_ONLY = ['jerseymikes'];
 function mealSheet(f){
   const cur = get(sel)[f] || '';
   openSheet(`
