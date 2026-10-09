@@ -550,7 +550,7 @@ function mealChips(){
   return list.slice(0, 14).map(o => [...o.names.entries()].sort((a, b) => b[1] - a[1])[0][0]);
 }
 const WED_ONLY = ['jerseymikes'];
-const NEVER_MEALS = ['pizza', 'leftovers', 'leftoverpizza'];   // usually leftovers, not a place
+const NEVER_MEALS = ['pizza', 'leftovers', 'leftoverpizza', 'church'];   // usually leftovers, not a place
 function mealSheet(f){
   const cur = get(sel)[f] || '';
   openSheet(`
