@@ -426,7 +426,7 @@ function monthHTML(){
 
   ${bigDays.length ? `<section class="card"><h2>biggest card days</h2><ul class="list">${bigDays.map(o => `
     <li><button class="lrow" data-act="goday" data-k="${o.k}"><span class="d">${short(o.k)}</span>
-      <span class="t">${esc((o.d.cc || []).map(e => e.n).filter(Boolean).join(', ') || '')}<small>${esc(o.d.notes || '')}</small></span>
+      <span class="t">${esc([...new Set((o.d.cc || []).map(e => (e.n || '').trim().toLowerCase()).filter(Boolean))].join(', '))}<small>${esc(o.d.notes || '')}</small></span>
       <span class="a">${fmt$(o.v)}</span></button></li>`).join('')}</ul></section>` : ''}
 
   <p class="ytd">${y} through ${MON[m - 1].slice(0, 3)}: card ${fmt$0(ytdCC)} · bofa ${fmt$0(ytdBO)}</p>`;
