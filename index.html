@@ -111,7 +111,6 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px}
 .bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--cc);border-radius:3px;opacity:.85}
 .bar.zero::after{background:var(--line);opacity:1}
-.bar.over::after{opacity:1;background:linear-gradient(var(--ink) 0 3px,var(--cc) 3px)}
 .bar.fut::after{background:transparent}
 .bar.sel::after{outline:2px solid var(--ink);outline-offset:1px}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:4px 0 10px}
@@ -391,8 +390,9 @@ function monthHTML(){
   for (const k in S.days) if (k.slice(0, 4) === String(y) && k.slice(0, 7) <= selMonth) { ytdCC += sum(S.days[k].cc); ytdBO += sum(S.days[k].bo); }
 
   const vals = days.map(([, d]) => sum(d.cc));
-  const nz = vals.filter(v => v > 0).sort((a, b) => a - b);
-  const cap = Math.max(15000, nz.length ? nz[Math.floor(nz.length * 0.9)] : 0);
+  // fixed scale: 110px = $150; the chart grows taller to fit a bigger day
+  const top = Math.max(15000, ...vals);
+  const barsH = Math.round(110 * top / 15000);
   const avgDay = elapsed ? cc / elapsed : 0;
 
 
@@ -417,7 +417,7 @@ function monthHTML(){
 
   <section class="card">
     <h2>card spend by day</h2>
-    <div class="bars">${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > cap ? 'over' : ''}" style="--h:${Math.min(1, v / cap).toFixed(3)}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}"></button>`).join('')}</div>
+    <div class="bars" style="height:${barsH}px">${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''}" style="--h:${(v / top).toFixed(4)}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}"></button>`).join('')}</div>
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
 
