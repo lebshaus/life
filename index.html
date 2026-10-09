@@ -39,7 +39,13 @@ main{max-width:560px;margin:0 auto;padding:0 16px 24px}
 .icon:active{background:var(--fill)}
 .icon:disabled{opacity:.25}
 .when{flex:1;text-align:center}
-.when-l{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.when-l{font-size:22px;font-weight:700;letter-spacing:-.01em;display:inline-flex;align-items:center;gap:8px}
+.hl{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none}
+.hd small .hl{width:8px;height:8px;margin-right:3px;vertical-align:0}
+.swatches{display:flex;flex-wrap:wrap;gap:12px;margin:4px 0 8px}
+.swatch{width:44px;height:44px;border-radius:50%;border:2px solid transparent}
+.swatch.on{border-color:var(--ink)}
+.swatch.none{background:var(--fill);color:var(--muted);font-size:20px}
 .when-d{font-size:13px;color:var(--muted)}
 .ttl{font-size:28px;font-weight:750;letter-spacing:-.02em;margin:0}
 .jump{display:block;margin:-2px auto 10px;font-size:13px;font-weight:600;color:var(--accent);background:var(--soft);padding:6px 12px;border-radius:99px}
@@ -259,7 +265,7 @@ try { navigator.storage && navigator.storage.persist && navigator.storage.persis
 
 function blank(d){
   return !d || (d.s == null && !d.wo && !d.m1 && !d.m2 && !d.mood && !d.gr && d.w == null &&
-    !(d.cc && d.cc.length) && !(d.bo && d.bo.length) && !d.notes);
+    !(d.cc && d.cc.length) && !(d.bo && d.bo.length) && !d.notes && !d.hl);
 }
 const get = k => S.days[k] || {};
 function ensure(k){ const d = S.days[k] || (S.days[k] = {}); d.cc = d.cc || []; d.bo = d.bo || []; markDirty(k); return d; }
@@ -301,7 +307,7 @@ function todayHTML(){
   return `
   <header class="top">
     <button class="icon" data-act="prev" aria-label="previous day">‹</button>
-    <div class="when"><div class="when-l">${label}</div>
+    <div class="when"><button class="when-l" data-act="hl" aria-label="set day color">${d.hl ? `<i class="hl" style="background:${d.hl}"></i>` : ''}${label}</button>
       <div class="when-d">${MON[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}</div></div>
     <button class="icon" data-act="next" aria-label="next day" ${sel >= t ? 'disabled' : ''}>›</button>
   </header>
@@ -449,7 +455,7 @@ function histList(){
       const c = sum(d.cc), b = sum(d.bo);
       const meta = [d.s != null ? d.s + 'h' : '', d.wo ? 'workout' : ''].filter(Boolean).join(' · ');
       return `<button class="hrow" data-act="goday" data-k="${k}">
-        <span class="hd"><b>${dt.getDate()}</b><small>${DOW[dt.getDay()]}</small></span>
+        <span class="hd"><b>${dt.getDate()}</b><small>${d.hl ? `<i class="hl" style="background:${d.hl}"></i>` : ''}${DOW[dt.getDay()]}</small></span>
         <span class="hm"><span class="l1">${esc(meals || d.mood || '—')}</span><span class="l2">${esc(d.notes || '')}</span></span>
         <span class="hr">${c ? `<span>${fmt$(c)}</span>` : ''}${b ? `<span class="bo">${fmt$(b)}</span>` : ''}${meta ? `<small>${meta}</small>` : ''}</span></button>`;
     }).join('')}</div>`;
@@ -609,6 +615,21 @@ function billsDue(){
   return BILLS.map(n => ({n, when: last[n], a: lastAmt[n]}))
     .filter(b => b.when && (fromISO(t) - fromISO(b.when)) / 864e5 >= 27);
 }
+/* ---------- day highlight (vacations, special days) ---------- */
+const HL_COLORS = ['#cfe2f3', '#d0e0e3', '#d9ead3', '#fff2cc', '#d9d2e9', '#f4cccc', '#fce5cd'];   // google sheets' light 3 palette
+function hlSheet(){
+  const cur = get(sel).hl || '';
+  openSheet(`
+    <div class="sheet-h">day color · ${sel === todayISO() ? 'today' : short(sel)}</div>
+    <div class="swatches">${HL_COLORS.map(c => `<button class="swatch ${c === cur ? 'on' : ''}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}
+      <button class="swatch none ${cur ? '' : 'on'}" data-c="" aria-label="no color">×</button></div>
+    <p class="muted small" style="margin:6px 0 0">for vacations and special days</p>`, b => {
+    b.querySelectorAll('.swatch').forEach(x => x.onclick = () => {
+      const d = ensure(sel); if (x.dataset.c) d.hl = x.dataset.c; else delete d.hl;
+      save(); closeSheet(); render();
+    });
+  });
+}
 function ago(ts){ const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; }
 function dataSheet(){
   const n = Object.keys(S.days).length;
@@ -674,12 +695,12 @@ const itemsStr = arr => (arr || []).some(e => e.n) ? arr.map(e => (e.n ? e.n + '
 const spendCell = arr => { arr = arr || []; if (!arr.length) return ''; if (arr.length === 1) return (arr[0].a / 100).toFixed(2);
   return '=' + arr.map((e, i) => (e.a < 0 ? '-' : i ? '+' : '') + (Math.abs(e.a) / 100).toFixed(2).replace(/\.?0+$/, '')).join(''); };
 function toCSV(){
-  const H = ['date', 'sleep', 'workout', 'meal 1', 'meal 2', 'mood', 'grateful', 'weight', 'cc spend', 'bofa spend', 'cc items', 'bofa items', 'notes'];
+  const H = ['date', 'sleep', 'workout', 'meal 1', 'meal 2', 'mood', 'grateful', 'weight', 'cc spend', 'bofa spend', 'cc items', 'bofa items', 'notes', 'color'];
   const out = [H.join(',')];
   Object.keys(S.days).sort().forEach(k => {
     const d = S.days[k];
     out.push([k, d.s ?? '', d.wo ? 'TRUE' : 'FALSE', d.m1 || '', d.m2 || '', d.mood || '', d.gr || '', d.w ?? '',
-      spendCell(d.cc), spendCell(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || ''].map(csvCell).join(','));
+      spendCell(d.cc), spendCell(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || '', d.hl || ''].map(csvCell).join(','));
   });
   return '﻿' + out.join('\r\n');
 }
@@ -730,7 +751,7 @@ function fromCSV(text){
   const col = (...n) => H.findIndex(h => n.includes(h));
   const C = {date: col('date'), s: col('sleep (hours)', 'sleep'), st: col('strech', 'stretch'), li: col('lift'), ro: col('row'), wo: col('workout'),
     m1: col('meal 1'), m2: col('meal 2'), mood: col('mood'), gr: col('grateful'), w: col('weight (lbs)', 'weight'),
-    cc: col('cc spend', 'card spend', 'card'), bo: col('bofa spend', 'bofa'), cci: col('cc items', 'card items'), boi: col('bofa items'), notes: col('notes')};
+    cc: col('cc spend', 'card spend', 'card'), bo: col('bofa spend', 'bofa'), cci: col('cc items', 'card items'), boi: col('bofa items'), notes: col('notes'), hl: col('color')};
   const out = {};
   for (const r of rows.slice(hi + 1)) {
     const cell = i => i >= 0 ? (r[i] ?? '').trim() : '';
@@ -739,6 +760,7 @@ function fromCSV(text){
     const s = parseFloat(cell(C.s)); if (!isNaN(s)) d.s = s;
     if ([C.st, C.li, C.ro, C.wo].some(i => /^true$/i.test(cell(i)))) d.wo = true;
     for (const f of ['m1', 'm2', 'mood', 'gr', 'notes']) { const v = cell(C[f]); if (v) d[f] = v; }
+    if (/^#[0-9a-f]{6}$/i.test(cell(C.hl))) d.hl = cell(C.hl).toLowerCase();
     const w = parseFloat(cell(C.w)); if (!isNaN(w) && w > 0) d.w = w;
     for (const [acct, ic] of [['cc', 'cci'], ['bo', 'boi']]) {
       const raw = cell(C[acct]);
@@ -799,6 +821,7 @@ document.addEventListener('click', e => {
   else if (act === 'goday') { const k = el.dataset.k; if (k <= t) { sel = k; view = 'today'; render(); scrollTo(0, 0); } }
   else if (act === 'data') dataSheet();
   else if (act === 'syncnow') sync();
+  else if (act === 'hl') hlSheet();
 });
 main.addEventListener('input', e => {
   const tg = e.target;
@@ -834,7 +857,7 @@ const numOrNull = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
 const spendVal = arr => { const c = spendCell(arr); return c === '' || String(c).startsWith('=') ? c : +c; };
 function toRow(k, d){
   return [k, d.s ?? '', !!d.wo, d.m1 || '', d.m2 || '', d.mood || '', d.gr || '', d.w ?? '',
-    spendVal(d.cc), spendVal(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || '', d.u || Date.now()];
+    spendVal(d.cc), spendVal(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || '', d.u || Date.now(), d.hl || ''];
 }
 function fromRow(r){
   const c = i => (r[i] == null ? '' : r[i]);
@@ -851,6 +874,7 @@ function fromRow(r){
     if (items) d[a] = items; else if (terms) d[a] = terms; else if (tot) d[a] = [{a: tot, n: ''}];
   });
   d.u = +c(13) || 0;
+  const hl = String(c(14)).trim().toLowerCase(); if (/^#[0-9a-f]{6}$/.test(hl)) d.hl = hl;
   return d;
 }
 // One round trip to the sheet's script. Reads the reply as text so a Google error page gives a readable message.
