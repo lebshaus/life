@@ -558,7 +558,7 @@ function parseGarage(rows){
     v.state = (v.h[0] || '').toLowerCase(); v.plate = (v.h[1] || '').toUpperCase(); v.notes = v.h.slice(2).map(x => x.toLowerCase());
     // the sheet's own cost column wins (it can leave things out on purpose); otherwise add it up
     v.total = v.cost != null ? v.cost : (v.price || 0) + v.parts.reduce((t, x) => t + (x.price || 0), 0);
-    v.parts.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    v.parts.sort((a, b) => (a.date || '').localeCompare(b.date || ''));   // oldest first, newest at the bottom
   }
   return out;
 }
