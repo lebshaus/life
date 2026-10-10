@@ -107,21 +107,21 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 #cclist,#bolist{scroll-margin-top:12px}
 .h2n{float:right;font-weight:500;color:var(--muted);font-size:12px}
 .tile.cc .v{color:var(--cc)} .tile.bo .v{color:var(--bofa)}
-.bars{display:flex;align-items:flex-end;gap:2px;height:132px;padding:22px 0 0;position:relative}
+.bars{--cc-bar:color-mix(in srgb,var(--cc) 85%,var(--card));display:flex;align-items:flex-end;gap:2px;height:132px;padding:22px 0 0 34px;position:relative}
+.bars::before{content:"";position:absolute;left:29px;top:22px;bottom:0;width:1px;background:var(--line)}
 .bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px;position:relative}
 .maxlbl{position:absolute;left:50%;bottom:calc(var(--h)*100% + 3px);transform:translateX(-50%);font-size:11px;font-weight:650;color:var(--ink);white-space:nowrap;pointer-events:none}
-.avgline{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed color-mix(in srgb,var(--muted) 60%,transparent);pointer-events:none;z-index:2}
-.avgline span{position:absolute;left:0;bottom:3px;font-size:10px;font-weight:600;line-height:1;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 6px;white-space:nowrap}
+.avgline{position:absolute;left:29px;right:0;height:0;border-top:1.5px dashed color-mix(in srgb,var(--muted) 60%,transparent);pointer-events:none;z-index:2}
+.avgline span{position:absolute;right:calc(100% + 4px);top:0;transform:translateY(-50%);font-size:10px;font-weight:600;line-height:1;color:var(--muted);white-space:nowrap}
 .maxlbl.l{left:0;transform:none}.maxlbl.r{left:auto;right:0;transform:none}
-.bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--bc, var(--cc));border-radius:3px;opacity:.85}
-.bar.vac::after{opacity:1}
+.bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--bc, var(--cc-bar));border-radius:3px}
 .bar.zero::after{background:var(--line);opacity:1}
-.bar.over::after{opacity:1;background:linear-gradient(var(--ink) 0 3px,var(--bc, var(--cc)) 3px)}
+.bar.over::after{background:linear-gradient(var(--ink) 0 3px,var(--bc, var(--cc-bar)) 3px)}
 .bar.fut::after{background:transparent}
 .bar.sel::after{outline:2px solid var(--ink);outline-offset:1px}
-.trips{position:relative;height:16px;margin-top:4px}
+.trips{position:relative;height:16px;margin:4px 0 0 34px}
 .trips span{position:absolute;top:0;text-align:center;font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;border-top:3px solid var(--bc);border-radius:2px;padding-top:2px;line-height:1.1;overflow:visible;display:flex;justify-content:center}
-.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:4px 0 10px}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:4px 0 10px 34px}
 .list{list-style:none;margin:0;padding:0}
 .list li{border-top:1px solid var(--line)}
 .list li:first-child{border-top:0}
@@ -434,7 +434,7 @@ function monthHTML(){
 
   <section class="card">
     <h2>card spend by day</h2>
-    <div class="bars" style="height:${plotH + 22}px">${yrAvg ? `<div class="avgline" style="bottom:${(Math.min(1, yrAvg / top) * plotH).toFixed(1)}px"><span>${y} avg ${fmt$0(yrAvg)}/day</span></div>` : ''}${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''} ${days[i][1].hl ? 'vac' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}${days[i][1].hl ? ';--bc:' + days[i][1].hl : ''}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
+    <div class="bars" style="height:${plotH + 22}px">${yrAvg ? `<div class="avgline" style="bottom:${(Math.min(1, yrAvg / top) * plotH).toFixed(1)}px"><span>${fmt$0(yrAvg)}</span></div>` : ''}${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''} ${days[i][1].hl ? 'vac' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}${days[i][1].hl ? ';--bc:' + days[i][1].hl : ''}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
     ${trips.length ? `<div class="trips">${trips.map(r => `<span style="left:${(r.i / dim * 100).toFixed(2)}%;width:${(r.n / dim * 100).toFixed(2)}%;--bc:${r.c}">${esc(r.name)}</span>`).join('')}</div>` : ''}
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
