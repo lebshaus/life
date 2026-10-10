@@ -158,13 +158,19 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .hr small{font-weight:400;color:var(--muted);font-size:12px}
 .gsum{color:var(--muted);font-size:14px;margin:-4px 4px 12px}
 .veh{padding:0 16px}
-.vhead{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:14px 0}
-.vt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.vt b{font-size:17px;font-weight:700}
-.plate{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:6px;border:1.5px solid var(--ink);color:var(--ink)}
-.vs{display:flex;align-items:baseline;gap:8px}
-.vc{font-size:22px;font-weight:750;letter-spacing:-.02em}
-.vs small{color:var(--muted);font-size:13px}
+.vhead{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px 0}
+.paint{flex:0 0 16px;height:16px;border-radius:50%;background:var(--line);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.vmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.vn{font-size:16px;font-weight:700}
+.plate{flex:0 0 auto;width:82px;height:42px;border:1.5px solid #1c1b19;border-radius:4px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-transform:none}
+.plate small{font-size:6.5px;font-weight:800;letter-spacing:.06em;color:#d0352b;line-height:1}
+.plate b{font-size:17px;font-weight:800;color:#13305e;line-height:1;letter-spacing:.01em}
+.plate b.long{font-size:15px}
+.plate.classic{background:#f8f0dc}
+.plate.classic small,.plate.classic b{color:#1c1b19}
+.vs{display:flex;align-items:baseline;column-gap:7px;flex-wrap:wrap}
+.vc{font-size:20px;font-weight:750;letter-spacing:-.02em}
+.vs small{color:var(--muted);font-size:12px;white-space:nowrap}
 .vbody{border-top:1px solid var(--line);padding:4px 0 8px}
 .vrow{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;padding:8px 0;font-size:14px}
 .vrow .k{width:44px;color:var(--muted);font-size:12px;font-weight:600}
@@ -541,7 +547,7 @@ function parseGarage(rows){
       const sold = /\bsold\s*$/i.test(name);
       const [title, vin] = name.replace(/\s*\bsold\s*$/i, '').split(/\s+-\s+/);
       cur = {name: title.toLowerCase(), vin: (vin || '').toUpperCase(), price, date, sold, soldFor: sold ? gMoney(h) : null,
-             titleNo: c(10), cost: gMoney(c(5)), parts: [], h: sold ? [] : (h ? [h] : [])};
+             titleNo: c(10), cost: gMoney(c(5)), paint: /^#[0-9a-f]{3,8}$/i.test(c(11)) ? c(11) : '', plateStyle: c(12).toLowerCase(), parts: [], h: sold ? [] : (h ? [h] : [])};
       out.push(cur);
     } else if (cur && name) {
       cur.parts.push({name: name.toLowerCase(), price, date});
@@ -549,7 +555,7 @@ function parseGarage(rows){
     } else if (cur && !name && h) cur.h.push(h);
   }
   for (const v of out) {
-    v.state = (v.h[0] || '').toLowerCase(); v.plate = (v.h[1] || '').toLowerCase(); v.notes = v.h.slice(2).map(x => x.toLowerCase());
+    v.state = (v.h[0] || '').toLowerCase(); v.plate = (v.h[1] || '').toUpperCase(); v.notes = v.h.slice(2).map(x => x.toLowerCase());
     // the sheet's own cost column wins (it can leave things out on purpose); otherwise add it up
     v.total = v.cost != null ? v.cost : (v.price || 0) + v.parts.reduce((t, x) => t + (x.price || 0), 0);
     v.parts.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -566,8 +572,10 @@ function garageHTML(){
     const key = v.vin || v.name, open = !!openVeh[key], own = ageOf(v.date);
     return `<section class="card veh ${open ? 'open' : ''}">
       <button class="vhead" data-act="veh" data-k="${esc(key)}">
-        <span class="vt"><b>${esc(v.name)}</b>${v.plate ? `<i class="plate">${esc(v.plate)}</i>` : ''}</span>
-        <span class="vs"><span class="vc">${fmt$0(v.total)}</span><small>${v.sold ? (v.soldFor != null ? 'sold for ' + fmt$0(v.soldFor) : 'sold') : 'owned ' + own.txt} · ${v.parts.length} item${v.parts.length === 1 ? '' : 's'}</small></span>
+        <i class="paint" style="${v.paint ? 'background:' + v.paint : ''}"></i>
+        <span class="vmid"><b class="vn">${esc(v.name)}</b>
+          <span class="vs"><span class="vc">${fmt$0(v.total)}</span><small>${v.sold ? (v.soldFor != null ? 'sold for ' + fmt$0(v.soldFor) : 'sold') : 'owned ' + own.txt} · ${v.parts.length} item${v.parts.length === 1 ? '' : 's'}</small></span></span>
+        ${v.plate ? `<span class="plate ${v.plateStyle === 'classic' ? 'classic' : ''}"><small>${esc((v.state || 'oklahoma').toUpperCase())}</small><b class="${v.plate.length > 6 ? 'long' : ''}">${esc(v.plate)}</b></span>` : ''}
       </button>
       ${open ? `<div class="vbody">
         ${v.vin ? `<button class="vrow" data-act="copy" data-v="${esc(v.vin)}"><span class="k">vin</span><span class="mono">${esc(v.vin)}</span><span class="cp">copy</span></button>` : ''}
