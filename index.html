@@ -183,6 +183,11 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .prow .pa{color:var(--muted);font-size:12px;white-space:nowrap}
 .prow .pp{width:62px;text-align:right;font-weight:650;white-space:nowrap}
 .prow.base .pn{color:var(--muted)}
+.prow.pending{opacity:.55}
+.addpart{display:flex;align-items:center;gap:6px;width:100%;padding:12px 0 6px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;font-weight:600}
+.addpart svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round}
+.pdate{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 14px;padding:10px 14px;border-radius:12px;background:var(--fill);font-size:15px;color:var(--muted)}
+.pdate input{border:0;background:transparent;font:inherit;color:var(--ink);text-align:right}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
 
 /* tab bar */
@@ -204,10 +209,12 @@ nav .in{display:flex;width:100%;max-width:560px}
 .sheet-h{font-size:17px;font-weight:700;margin:0 0 12px}
 .amt-wrap{display:flex;align-items:center;gap:4px;font-size:36px;font-weight:700;border-bottom:2px solid var(--cc);margin-bottom:12px}
 .amt-wrap.bo{border-color:var(--bofa)}
+.amt-wrap.gp{border-color:var(--ink)}
 .amt-wrap span{color:var(--muted)}
 .amt-wrap input{flex:1;min-width:0;border:0;background:transparent;font-size:36px;font-weight:700;outline:none;padding:4px 0;font-variant-numeric:tabular-nums}
 .amt-wrap input.bad{color:var(--danger)}
 .field{width:100%;border:0;border-radius:12px;background:var(--fill);padding:12px 14px;outline:none;margin-bottom:12px}
+.field.bad{box-shadow:inset 0 0 0 1.5px var(--danger)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .chip{background:var(--fill);border-radius:99px;padding:8px 13px;font-size:15px;font-weight:550}
 .chip small{color:var(--muted);font-weight:500;margin-left:2px}
@@ -562,19 +569,47 @@ function parseGarage(rows){
   // column A sets the order on the garage tab (1 first); unnumbered ones go last
   return out.map((v, i) => [v, i]).sort((a, b) => ((isNaN(a[0].order) ? 1e9 : a[0].order) - (isNaN(b[0].order) ? 1e9 : b[0].order)) || a[1] - b[1]).map(x => x[0]);
 }
+function addPartSheet(vin, name){
+  const t = todayISO();
+  openSheet(`
+    <div class="sheet-h">add item · ${esc(name)}</div>
+    <input id="pn" class="field" placeholder="what was it?" autocomplete="off" autocapitalize="none" enterkeyhint="next">
+    <div class="amt-wrap gp"><span>$</span><input id="pa" inputmode="decimal" placeholder="0.00" autocomplete="off" enterkeyhint="done"></div>
+    <label class="pdate"><span>date</span><input id="pd" type="date" value="${t}" max="${t}"></label>
+    <button class="primary" id="ok">add</button>`, b => {
+    const pn = b.querySelector('#pn'), pa = b.querySelector('#pa'), pd = b.querySelector('#pd');
+    pn.focus();
+    const go = () => {
+      const nm = pn.value.trim().toLowerCase(), c = parseAmt(pa.value), d = ISO_RE.test(pd.value) ? pd.value : t;
+      if (!nm) { pn.classList.add('bad'); pn.focus(); return; }
+      if (c == null) { pa.classList.add('bad'); pa.focus(); return; }
+      (S.meta.gAdds = S.meta.gAdds || []).push({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), vin, name: nm, price: c / 100, date: d});
+      persist(); closeSheet(); render(); toast('added'); sync();
+    };
+    b.querySelector('#ok').onclick = go;
+    pn.oninput = () => pn.classList.remove('bad'); pa.oninput = () => pa.classList.remove('bad');
+    pn.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); pa.focus(); } };
+    pa.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); go(); } };
+  });
+}
 function garageHTML(){
   const all = parseGarage(S.garage);
   if (!all.some(v => !v.sold)) return `<header class="top"><h1 class="ttl">garage</h1></header>
     <p class="empty">nothing here yet.<br>your vehicles show up after the next sync.</p>`;
   const act = all.filter(v => !v.sold);
   const tot = act.reduce((t, v) => t + v.total, 0);
+  const pend = S.meta.gAdds || [];
   const card = (v, i) => {
     const key = v.vin || v.name, open = !!openVeh[key], own = ageOf(v.date);
+    const mine = pend.filter(a => v.vin && a.vin === v.vin);
+    const parts = v.parts.concat(mine.map(a => ({name: a.name, price: Math.round(a.price * 100), date: a.date, pending: true})))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const total = v.total + mine.reduce((t, a) => t + Math.round(a.price * 100), 0);
     return `<section class="card veh ${open ? 'open' : ''}">
       <button class="vhead" data-act="veh" data-k="${esc(key)}">
         <i class="paint" style="${v.paint ? 'background:' + v.paint : ''}"></i>
         <span class="vmid"><b class="vn">${esc(v.name)}</b>
-          <span class="vs"><span class="vc">${fmt$0(v.total)}</span><small>${v.sold ? (v.soldFor != null ? 'sold for ' + fmt$0(v.soldFor) : 'sold') : 'owned ' + own.txt} · ${v.parts.length} item${v.parts.length === 1 ? '' : 's'}</small></span></span>
+          <span class="vs"><span class="vc">${fmt$0(total)}</span><small>${v.sold ? (v.soldFor != null ? 'sold for ' + fmt$0(v.soldFor) : 'sold') : 'owned ' + own.txt} · ${parts.length} item${parts.length === 1 ? '' : 's'}</small></span></span>
         ${v.plate ? `<span class="plate ${/^(sand|california)$/.test(v.plateStyle) ? v.plateStyle : ''}"><small>${esc((v.state || 'oklahoma').toUpperCase())}</small><b>${esc(v.plate)}</b></span>` : ''}
       </button>
       ${open ? `<div class="vbody">
@@ -582,8 +617,10 @@ function garageHTML(){
         ${v.titleNo ? `<button class="vrow" data-act="copy" data-v="${esc(v.titleNo)}"><span class="k">title</span><span class="num">${esc(v.titleNo)}</span><svg class="cp" viewBox="0 0 24 24" aria-label="copy"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></svg></button>` : ''}
         <ul class="list parts">
           <li class="prow base"><span class="pn">${v.sold ? 'bought' : 'purchase'}</span><span class="pa">${own.txt}</span><span class="pp">${v.price != null ? fmt$0(v.price) : ''}</span></li>
-          ${v.parts.map(x => { const a = ageOf(x.date); return `<li class="prow"><span class="pn">${esc(x.name)}</span><span class="pa">${a.txt}</span><span class="pp">${x.price != null ? fmt$0(x.price) : ''}</span></li>`; }).join('')}
-        </ul></div>` : ''}
+          ${parts.map(x => { const a = ageOf(x.date); return `<li class="prow ${x.pending ? 'pending' : ''}"><span class="pn">${esc(x.name)}</span><span class="pa">${x.pending ? 'saving…' : a.txt}</span><span class="pp">${x.price != null ? fmt$0(x.price) : ''}</span></li>`; }).join('')}
+        </ul>
+        ${v.vin && !v.sold ? `<button class="addpart" data-act="addpart" data-k="${esc(v.vin)}" data-n="${esc(v.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>add item</button>` : ''}
+        </div>` : ''}
     </section>`;
   };
   return `<header class="top"><h1 class="ttl">garage</h1></header>
@@ -965,6 +1002,7 @@ document.addEventListener('click', e => {
   }
   else if (act === 'sleep') { const d = ensure(sel); d.s = d.s == null ? 7 : Math.max(0, Math.min(14, d.s + +el.dataset.n)); save(); render(); }
   else if (act === 'wo') { const d = ensure(sel); d.wo = !d.wo; save(); render(); }
+  else if (act === 'addpart') addPartSheet(el.dataset.k, el.dataset.n);
   else if (act === 'veh') { openVeh[el.dataset.k] = !openVeh[el.dataset.k]; render(); }
   else if (act === 'copy') { const v = el.dataset.v; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => toast('copied'), () => toast('couldn’t copy')); }
   else if (act === 'jump') { const to = document.getElementById(el.dataset.to); if (to) to.scrollIntoView({behavior: 'smooth', block: 'start'}); }
@@ -1059,7 +1097,8 @@ async function sync(){
   const rows = dirty.map(k => { const d = S.days[k] || {}; const row = toRow(k, d); sent[k] = row[13]; return row; });
   let ok = false;
   try {
-    const body = JSON.stringify({key: S.meta.sync.key, rows});
+    const adds = (S.meta.gAdds || []).slice();
+    const body = JSON.stringify(adds.length ? {key: S.meta.sync.key, rows, adds} : {key: S.meta.sync.key, rows});
     let j;
     try { j = await talk(body); }
     catch (e1) { await new Promise(r => setTimeout(r, 1500)); j = await talk(body); }   // one automatic retry
@@ -1073,6 +1112,7 @@ async function sync(){
       const ld = S.days[k];
       if (!ld ? !blank(rd) : (rd.u || 0) > (ld.u || 0)) { S.days[k] = rd; changed = true; }
     }
+    if (Array.isArray(j.added) && j.added.length) { S.meta.gAdds = (S.meta.gAdds || []).filter(a => j.added.indexOf(a.id) < 0); if (view === 'garage') changed = true; }
     if (Array.isArray(j.garage) && JSON.stringify(j.garage) !== JSON.stringify(S.garage || null)) { S.garage = j.garage; if (view === 'garage') changed = true; }
     S.meta.lastSync = Date.now();
     persist();
