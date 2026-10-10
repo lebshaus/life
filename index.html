@@ -546,7 +546,7 @@ function parseGarage(rows){
       const sold = /\bsold\s*$/i.test(name);
       const [title, vin] = name.replace(/\s*\bsold\s*$/i, '').split(/\s+-\s+/);
       cur = {name: title.toLowerCase(), vin: (vin || '').toUpperCase(), price, date, sold, soldFor: sold ? gMoney(h) : null,
-             titleNo: c(10), cost: gMoney(c(5)), paint: /^#[0-9a-f]{3,8}$/i.test(c(11)) ? c(11) : '', plateStyle: c(12).toLowerCase(), parts: [], h: sold ? [] : (h ? [h] : [])};
+             order: parseFloat(c(0)), titleNo: c(10), cost: gMoney(c(5)), paint: /^#[0-9a-f]{3,8}$/i.test(c(11)) ? c(11) : '', plateStyle: c(12).toLowerCase(), parts: [], h: sold ? [] : (h ? [h] : [])};
       out.push(cur);
     } else if (cur && name) {
       cur.parts.push({name: name.toLowerCase(), price, date});
@@ -559,7 +559,8 @@ function parseGarage(rows){
     v.total = v.cost != null ? v.cost : (v.price || 0) + v.parts.reduce((t, x) => t + (x.price || 0), 0);
     v.parts.sort((a, b) => (a.date || '').localeCompare(b.date || ''));   // oldest first, newest at the bottom
   }
-  return out;
+  // column A sets the order on the garage tab (1 first); unnumbered ones go last
+  return out.map((v, i) => [v, i]).sort((a, b) => ((isNaN(a[0].order) ? 1e9 : a[0].order) - (isNaN(b[0].order) ? 1e9 : b[0].order)) || a[1] - b[1]).map(x => x[0]);
 }
 function garageHTML(){
   const all = parseGarage(S.garage);
