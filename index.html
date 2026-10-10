@@ -88,7 +88,8 @@ main{max-width:560px;margin:0 auto;padding:0 16px 24px}
 
 /* controls */
 .stepper{margin-left:auto;display:flex;align-items:center;gap:4px}
-.stepper button{width:40px;height:36px;border-radius:10px;background:var(--fill);font-size:20px}
+.stepper button{width:40px;height:36px;border-radius:10px;background:var(--fill);display:grid;place-items:center}
+.stepper button svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round}
 .stepper .sv{min-width:56px;text-align:center;font-weight:650;font-variant-numeric:tabular-nums}
 .switch{margin-left:auto;width:52px;height:32px;border-radius:16px;background:var(--fill);position:relative;transition:background .15s}
 .switch i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:13px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
@@ -351,9 +352,9 @@ function todayHTML(){
 
   <section class="card">
     <div class="row"><span class="k">sleep</span>
-      <div class="stepper"><button data-act="sleep" data-n="-0.5" aria-label="Less sleep">−</button>
+      <div class="stepper"><button data-act="sleep" data-n="-0.5" aria-label="less sleep"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12h13"/></svg></button>
       <span class="sv">${d.s != null ? d.s + 'h' : '—'}</span>
-      <button data-act="sleep" data-n="0.5" aria-label="More sleep">+</button></div></div>
+      <button data-act="sleep" data-n="0.5" aria-label="more sleep"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></button></div></div>
     <div class="row"><span class="k">workout</span>
       <button class="switch ${d.wo ? 'on' : ''}" data-act="wo" role="switch" aria-checked="${!!d.wo}" aria-label="Worked out"><i></i></button></div>
     <label class="row"><span class="k">weight</span>
