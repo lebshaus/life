@@ -111,7 +111,7 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px;position:relative}
 .maxlbl{position:absolute;left:50%;bottom:calc(var(--h)*100% + 3px);transform:translateX(-50%);font-size:11px;font-weight:650;color:var(--ink);white-space:nowrap;pointer-events:none}
 .avgline{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed color-mix(in srgb,var(--muted) 60%,transparent);pointer-events:none;z-index:2}
-.avgline span{position:absolute;right:0;top:0;transform:translateY(-50%);font-size:10px;font-weight:600;line-height:1;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 6px;white-space:nowrap}
+.avgline span{position:absolute;left:0;bottom:3px;font-size:10px;font-weight:600;line-height:1;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 6px;white-space:nowrap}
 .maxlbl.l{left:0;transform:none}.maxlbl.r{left:auto;right:0;transform:none}
 .bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--bc, var(--cc));border-radius:3px;opacity:.85}
 .bar.vac::after{opacity:1}
@@ -119,6 +119,8 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .bar.over::after{opacity:1;background:linear-gradient(var(--ink) 0 3px,var(--bc, var(--cc)) 3px)}
 .bar.fut::after{background:transparent}
 .bar.sel::after{outline:2px solid var(--ink);outline-offset:1px}
+.trips{position:relative;height:16px;margin-top:4px}
+.trips span{position:absolute;top:0;text-align:center;font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;border-top:3px solid var(--bc);border-radius:2px;padding-top:2px;line-height:1.1;overflow:visible;display:flex;justify-content:center}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:4px 0 10px}
 .list{list-style:none;margin:0;padding:0}
 .list li{border-top:1px solid var(--line)}
@@ -405,6 +407,8 @@ function monthHTML(){
   for (const k in S.days) if (k.slice(0, 4) === String(y) && k <= t) yrCC += sum(S.days[k].cc);
   const yrDays = String(y) < t.slice(0, 4) ? (y % 4 ? 365 : 366) : Math.round((fromISO(t) - new Date(y, 0, 1)) / 864e5) + 1;
   const yrAvg = String(y) <= t.slice(0, 4) && yrDays > 0 ? yrCC / yrDays : 0;
+  const trips = [];
+  days.forEach(([, d], i) => { if (!d.hl || !d.trip) return; const last = trips[trips.length - 1]; if (last && last.name === d.trip && last.i + last.n === i) last.n++; else trips.push({name: d.trip, c: d.hl, i, n: 1}); });
   const maxV = Math.max(...vals), maxI = maxV > 0 ? vals.indexOf(maxV) : -1;
   const avgDay = elapsed ? cc / elapsed : 0;
 
@@ -431,6 +435,7 @@ function monthHTML(){
   <section class="card">
     <h2>card spend by day</h2>
     <div class="bars" style="height:${plotH + 22}px">${yrAvg ? `<div class="avgline" style="bottom:${(Math.min(1, yrAvg / top) * plotH).toFixed(1)}px"><span>${y} avg ${fmt$0(yrAvg)}/day</span></div>` : ''}${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''} ${days[i][1].hl ? 'vac' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}${days[i][1].hl ? ';--bc:' + days[i][1].hl : ''}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
+    ${trips.length ? `<div class="trips">${trips.map(r => `<span style="left:${(r.i / dim * 100).toFixed(2)}%;width:${(r.n / dim * 100).toFixed(2)}%;--bc:${r.c}">${esc(r.name)}</span>`).join('')}</div>` : ''}
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
 
@@ -638,17 +643,22 @@ function billsDue(){
 }
 /* ---------- day highlight (vacations, special days) ---------- */
 const HL_COLORS = ['#cfe2f3', '#d0e0e3', '#d9ead3', '#fff2cc', '#d9d2e9', '#f4cccc', '#fce5cd'];   // google sheets' light 3 palette
+function hlCell(d){ return d.hl ? d.hl + (d.trip ? ' ' + d.trip : '') : ''; }
 function hlSheet(){
   const cur = get(sel).hl || '';
   openSheet(`
     <div class="sheet-h">day color · ${sel === todayISO() ? 'today' : short(sel)}</div>
     <div class="swatches">${HL_COLORS.map(c => `<button class="swatch ${c === cur ? 'on' : ''}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}
       <button class="swatch none ${cur ? '' : 'on'}" data-c="" aria-label="no color">×</button></div>
-    <p class="muted small" style="margin:6px 0 0">for vacations and special days</p>`, b => {
+    <p class="muted small" style="margin:6px 0 10px">for vacations and special days</p>
+    <input id="tripIn" class="search" type="text" placeholder="trip name (optional, shows on the month chart)" value="${esc(get(sel).trip || '')}" autocapitalize="none" autocomplete="off">`, b => {
+    const tin = b.querySelector('#tripIn');
+    const putTrip = d => { const v = tin.value.trim().toLowerCase(); if (v && d.hl) d.trip = v; else delete d.trip; };
     b.querySelectorAll('.swatch').forEach(x => x.onclick = () => {
       const d = ensure(sel); if (x.dataset.c) d.hl = x.dataset.c; else delete d.hl;
-      save(); closeSheet(); render();
+      putTrip(d); save(); closeSheet(); render();
     });
+    tin.onchange = () => { const d = get(sel); if (d.hl) { putTrip(ensure(sel)); save(); render(); } };
   });
 }
 function ago(ts){ const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; }
@@ -721,7 +731,7 @@ function toCSV(){
   Object.keys(S.days).sort().forEach(k => {
     const d = S.days[k];
     out.push([k, d.s ?? '', d.wo ? 'TRUE' : 'FALSE', d.m1 || '', d.m2 || '', d.mood || '', d.gr || '', d.w ?? '',
-      spendCell(d.cc), spendCell(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || '', d.hl || ''].map(csvCell).join(','));
+      spendCell(d.cc), spendCell(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || '', hlCell(d)].map(csvCell).join(','));
   });
   return '﻿' + out.join('\r\n');
 }
@@ -781,7 +791,7 @@ function fromCSV(text){
     const s = parseFloat(cell(C.s)); if (!isNaN(s)) d.s = s;
     if ([C.st, C.li, C.ro, C.wo].some(i => /^true$/i.test(cell(i)))) d.wo = true;
     for (const f of ['m1', 'm2', 'mood', 'gr', 'notes']) { const v = cell(C[f]); if (v) d[f] = v; }
-    if (/^#[0-9a-f]{6}$/i.test(cell(C.hl))) d.hl = cell(C.hl).toLowerCase();
+    const hm = cell(C.hl).toLowerCase().match(/^(#[0-9a-f]{6})\s*(.*)$/); if (hm) { d.hl = hm[1]; if (hm[2]) d.trip = hm[2]; }
     const w = parseFloat(cell(C.w)); if (!isNaN(w) && w > 0) d.w = w;
     for (const [acct, ic] of [['cc', 'cci'], ['bo', 'boi']]) {
       const raw = cell(C[acct]);
@@ -888,7 +898,7 @@ const numOrNull = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
 const spendVal = arr => { const c = spendCell(arr); return c === '' || String(c).startsWith('=') ? c : +c; };
 function toRow(k, d){
   return [k, d.s ?? '', !!d.wo, d.m1 || '', d.m2 || '', d.mood || '', d.gr || '', d.w ?? '',
-    spendVal(d.cc), spendVal(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || '', d.u || Date.now(), d.hl || ''];
+    spendVal(d.cc), spendVal(d.bo), itemsStr(d.cc), itemsStr(d.bo), d.notes || '', d.u || Date.now(), hlCell(d)];
 }
 function fromRow(r){
   const c = i => (r[i] == null ? '' : r[i]);
@@ -905,7 +915,7 @@ function fromRow(r){
     if (items) d[a] = items; else if (terms) d[a] = terms; else if (tot) d[a] = [{a: tot, n: ''}];
   });
   d.u = +c(13) || 0;
-  const hl = String(c(14)).trim().toLowerCase(); if (/^#[0-9a-f]{6}$/.test(hl)) d.hl = hl;
+  const hm = String(c(14)).trim().toLowerCase().match(/^(#[0-9a-f]{6})\s*(.*)$/); if (hm) { d.hl = hm[1]; if (hm[2]) d.trip = hm[2]; }
   return d;
 }
 // One round trip to the sheet's script. Reads the reply as text so a Google error page gives a readable message.
