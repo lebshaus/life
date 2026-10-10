@@ -108,11 +108,10 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .h2n{float:right;font-weight:500;color:var(--muted);font-size:12px}
 .tile.cc .v{color:var(--cc)} .tile.bo .v{color:var(--bofa)}
 .bars{--cc-bar:color-mix(in srgb,var(--cc) 85%,var(--card));display:flex;align-items:flex-end;gap:2px;height:132px;padding:22px 0 0 34px;position:relative}
-.bars::before{content:"";position:absolute;left:29px;top:22px;bottom:0;width:1px;background:var(--line)}
 .bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px;position:relative}
 .maxlbl{position:absolute;left:50%;bottom:calc(var(--h)*100% + 3px);transform:translateX(-50%);font-size:11px;font-weight:650;color:var(--ink);white-space:nowrap;pointer-events:none}
 .avgline{position:absolute;left:29px;right:0;height:0;border-top:1.5px dashed color-mix(in srgb,var(--muted) 60%,transparent);pointer-events:none;z-index:2}
-.avgline span{position:absolute;right:calc(100% + 4px);top:0;transform:translateY(-50%);font-size:10px;font-weight:600;line-height:1;color:var(--muted);white-space:nowrap}
+.avgline span{position:absolute;left:-29px;top:0;transform:translateY(-50%);font-size:10px;font-weight:600;line-height:1;color:var(--muted);white-space:nowrap}
 .maxlbl.l{left:0;transform:none}.maxlbl.r{left:auto;right:0;transform:none}
 .bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--bc, var(--cc-bar));border-radius:3px}
 .bar.zero::after{background:var(--line);opacity:1}
