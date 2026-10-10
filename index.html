@@ -1003,7 +1003,7 @@ document.addEventListener('click', e => {
   else if (act === 'sleep') { const d = ensure(sel); d.s = d.s == null ? 7 : Math.max(0, Math.min(14, d.s + +el.dataset.n)); save(); render(); }
   else if (act === 'wo') { const d = ensure(sel); d.wo = !d.wo; save(); render(); }
   else if (act === 'addpart') addPartSheet(el.dataset.k, el.dataset.n);
-  else if (act === 'veh') { openVeh[el.dataset.k] = !openVeh[el.dataset.k]; render(); }
+  else if (act === 'veh') { const k = el.dataset.k, was = !!openVeh[k]; openVeh = {}; if (!was) openVeh[k] = true; render(); const c = main.querySelector('.veh.open'); if (c && c.getBoundingClientRect().top < 0) c.scrollIntoView({block: 'start'}); }
   else if (act === 'copy') { const v = el.dataset.v; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => toast('copied'), () => toast('couldn’t copy')); }
   else if (act === 'jump') { const to = document.getElementById(el.dataset.to); if (to) to.scrollIntoView({behavior: 'smooth', block: 'start'}); }
   else if (act === 'mprev') { if (selMonth > firstMonth()) { selMonth = addMonths(selMonth, -1); render(); } }
