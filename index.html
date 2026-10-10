@@ -174,8 +174,8 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .vbody{border-top:1px solid var(--line);padding:4px 0 8px}
 .vrow{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;padding:8px 0;font-size:14px}
 .vrow .k{width:44px;color:var(--muted);font-size:12px;font-weight:600}
-.vrow .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:.02em}
-.vrow .cp{margin-left:auto;color:var(--accent);font-size:12px;font-weight:650}
+.vrow .num{font-size:14px;font-variant-numeric:tabular-nums}
+.vrow .cp{width:15px;height:15px;flex:0 0 15px;align-self:center;margin-left:-2px;fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .vrow.note{color:var(--muted);font-size:13px;padding:2px 0 6px 54px}
 .parts{margin-top:6px;border-top:1px solid var(--line)}
 .prow{display:flex;gap:10px;align-items:baseline;padding:9px 0;font-size:14px}
@@ -578,8 +578,8 @@ function garageHTML(){
         ${v.plate ? `<span class="plate ${/^(sand|california)$/.test(v.plateStyle) ? v.plateStyle : ''}"><small>${esc((v.state || 'oklahoma').toUpperCase())}</small><b>${esc(v.plate)}</b></span>` : ''}
       </button>
       ${open ? `<div class="vbody">
-        ${v.vin ? `<button class="vrow" data-act="copy" data-v="${esc(v.vin)}"><span class="k">vin</span><span class="mono">${esc(v.vin)}</span><span class="cp">copy</span></button>` : ''}
-        ${v.titleNo ? `<button class="vrow" data-act="copy" data-v="${esc(v.titleNo)}"><span class="k">title</span><span class="mono">${esc(v.titleNo)}</span><span class="cp">copy</span></button>` : ''}
+        ${v.vin ? `<button class="vrow" data-act="copy" data-v="${esc(v.vin)}"><span class="k">vin</span><span class="num">${esc(v.vin)}</span><svg class="cp" viewBox="0 0 24 24" aria-label="copy"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></svg></button>` : ''}
+        ${v.titleNo ? `<button class="vrow" data-act="copy" data-v="${esc(v.titleNo)}"><span class="k">title</span><span class="num">${esc(v.titleNo)}</span><svg class="cp" viewBox="0 0 24 24" aria-label="copy"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></svg></button>` : ''}
         <ul class="list parts">
           <li class="prow base"><span class="pn">${v.sold ? 'bought' : 'purchase'}</span><span class="pa">${own.txt}</span><span class="pp">${v.price != null ? fmt$0(v.price) : ''}</span></li>
           ${v.parts.map(x => { const a = ageOf(x.date); return `<li class="prow"><span class="pn">${esc(x.name)}</span><span class="pa ${a.y >= 3 ? 'old' : ''}">${a.txt}</span><span class="pp">${x.price != null ? fmt$0(x.price) : ''}</span></li>`; }).join('')}
