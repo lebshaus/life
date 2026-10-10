@@ -190,6 +190,7 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .addpart svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round}
 .pdate{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 14px;padding:10px 14px;border-radius:12px;background:var(--fill);font-size:15px;color:var(--muted)}
 .pdate input{border:0;background:transparent;font:inherit;color:var(--ink);text-align:right}
+.datainline{padding:14px 16px 16px;margin-top:-16px}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
 
 /* tab bar */
@@ -335,6 +336,7 @@ function render(){
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.view === view));
   main.innerHTML = view === 'today' ? todayHTML() : view === 'month' ? monthHTML() : view === 'garage' ? garageHTML() : historyHTML();
   main.querySelectorAll('textarea').forEach(autosize);
+  const di = main.querySelector('#dataInline'); if (di) dataSheet(di);
 }
 function autosize(t){ t.style.height = 'auto'; t.style.height = Math.max(72, t.scrollHeight) + 'px'; }
 
@@ -508,7 +510,7 @@ function histList(){
   const qq = q.trim().toLowerCase();
   const now = todayISO();
   const ks = Object.keys(S.days).sort().reverse().filter(k => k <= now && (!qq || hay(k).includes(qq)));
-  if (!ks.length) return `<p class="empty">${qq ? 'nothing matches.' : 'no days logged yet.<br>import your history from the data tab.'}</p>`;
+  if (!ks.length) return qq ? `<p class="empty">nothing matches.</p>` : `<p class="empty">no days logged yet.<br>import your history here.</p><div class="card datainline" id="dataInline"></div>`;
   const groups = [];
   for (const k of ks) { const mk = k.slice(0, 7); if (!groups.length || groups[groups.length - 1].mk !== mk) groups.push({mk, ks: []}); groups[groups.length - 1].ks.push(k); }
   return groups.map(g => {
@@ -832,10 +834,11 @@ function hlSheet(){
   });
 }
 function ago(ts){ const d = Math.floor((Date.now() - ts) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; }
-function dataSheet(){
+// shown as a sheet, or right inside the history tab (inlineEl) when this device has nothing yet
+function dataSheet(inlineEl){
   const n = Object.keys(S.days).length;
   const ks = Object.keys(S.days).sort();
-  openSheet(`
+  (inlineEl ? (h, m) => { inlineEl.innerHTML = h; m(inlineEl); } : openSheet)(`
     <div class="sheet-h">your data</div>
     <p class="muted small" style="margin:0 0 6px">${n ? `${n} days stored on this device (${short(ks[0])}, ${ks[0].slice(0, 4)} – ${short(ks[ks.length - 1])}).` : 'nothing stored yet.'}
       ${S.meta.lastBackup ? 'last backup ' + ago(S.meta.lastBackup) + '.' : 'no backup yet.'}</p>
