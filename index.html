@@ -162,10 +162,9 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .paint{flex:0 0 16px;height:16px;border-radius:50%;background:var(--line)}
 .vmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .vn{font-size:16px;font-weight:700}
-.plate{flex:0 0 auto;margin-right:4px;width:82px;height:42px;border:1.5px solid #1c1b19;border-radius:4px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-transform:none}
+.plate{flex:0 0 auto;margin-right:4px;width:82px;height:42px;border:1.5px solid #1c1b19;border-radius:4px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:4px;text-transform:none}
 .plate small{font-size:7px;font-weight:800;letter-spacing:0;color:#000;line-height:1}
-.plate b{font-size:15px;font-weight:800;color:#000;line-height:1;letter-spacing:0;transform:scaleY(1.12)}
-.plate b.long{font-size:13.5px}
+.plate b{flex:1;display:flex;align-items:center;padding-bottom:3px;font-size:14px;font-weight:800;color:#000;line-height:1;letter-spacing:0;transform:scaleY(1.12)}
 .plate.sand{background:#f8f1de}
 .plate.california b{color:#0c487f}
 .plate.california small{color:#e52c2c}
@@ -576,7 +575,7 @@ function garageHTML(){
         <i class="paint" style="${v.paint ? 'background:' + v.paint : ''}"></i>
         <span class="vmid"><b class="vn">${esc(v.name)}</b>
           <span class="vs"><span class="vc">${fmt$0(v.total)}</span><small>${v.sold ? (v.soldFor != null ? 'sold for ' + fmt$0(v.soldFor) : 'sold') : 'owned ' + own.txt} · ${v.parts.length} item${v.parts.length === 1 ? '' : 's'}</small></span></span>
-        ${v.plate ? `<span class="plate ${/^(sand|california)$/.test(v.plateStyle) ? v.plateStyle : ''}"><small>${esc((v.state || 'oklahoma').toUpperCase())}</small><b class="${v.plate.length > 6 ? 'long' : ''}">${esc(v.plate)}</b></span>` : ''}
+        ${v.plate ? `<span class="plate ${/^(sand|california)$/.test(v.plateStyle) ? v.plateStyle : ''}"><small>${esc((v.state || 'oklahoma').toUpperCase())}</small><b>${esc(v.plate)}</b></span>` : ''}
       </button>
       ${open ? `<div class="vbody">
         ${v.vin ? `<button class="vrow" data-act="copy" data-v="${esc(v.vin)}"><span class="k">vin</span><span class="mono">${esc(v.vin)}</span><span class="cp">copy</span></button>` : ''}
