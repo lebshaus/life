@@ -1,6 +1,6 @@
 // Offline support. The page itself is fetched fresh whenever you're online (so updates show up right away);
 // the saved copy is only used when there's no connection.
-const CACHE = 'life-v49';
+const CACHE = 'life-v50';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './favicon-32.png', './favicon-64.png'];
 
 self.addEventListener('install', e => {

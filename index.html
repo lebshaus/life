@@ -824,12 +824,17 @@ $('#fileIn').onchange = async e => {
 };
 
 /* ---------- events ---------- */
-// month tab: left/right arrow keys move between months (desktop)
+// today and month tabs: left/right arrow keys move between days / months (desktop)
 document.addEventListener('keydown', e => {
-  if (view !== 'month' || e.metaKey || e.ctrlKey || e.altKey || sheet.classList.contains('open')) return;
+  if ((view !== 'month' && view !== 'today') || e.metaKey || e.ctrlKey || e.altKey || sheet.classList.contains('open')) return;
   const tag = (document.activeElement && document.activeElement.tagName) || '';
   if (/INPUT|TEXTAREA|SELECT/.test(tag)) return;
   const t = todayISO();
+  if (view === 'today') {
+    if (e.key === 'ArrowLeft') { sel = addDays(sel, -1); render(); e.preventDefault(); }
+    else if (e.key === 'ArrowRight' && sel < t) { sel = addDays(sel, 1); render(); e.preventDefault(); }
+    return;
+  }
   if (e.key === 'ArrowLeft' && selMonth > firstMonth()) { selMonth = addMonths(selMonth, -1); render(); e.preventDefault(); }
   else if (e.key === 'ArrowRight' && selMonth < t.slice(0, 7)) { selMonth = addMonths(selMonth, 1); render(); e.preventDefault(); }
 });
