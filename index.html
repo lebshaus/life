@@ -110,8 +110,8 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .bars{display:flex;align-items:flex-end;gap:2px;height:132px;padding:22px 0 0;position:relative}
 .bar{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:3px;position:relative}
 .maxlbl{position:absolute;left:50%;bottom:calc(var(--h)*100% + 3px);transform:translateX(-50%);font-size:11px;font-weight:650;color:var(--ink);white-space:nowrap;pointer-events:none}
-.avgline{position:absolute;left:0;right:0;border-top:1.5px dashed var(--muted);opacity:.6;pointer-events:none;z-index:1}
-.h2n .dash{display:inline-block;width:14px;border-top:1.5px dashed var(--muted);opacity:.7;vertical-align:middle;margin-right:5px}
+.avgline{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed color-mix(in srgb,var(--muted) 60%,transparent);pointer-events:none;z-index:2}
+.avgline span{position:absolute;right:0;top:0;transform:translateY(-50%);font-size:10px;font-weight:600;line-height:1;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 6px;white-space:nowrap}
 .maxlbl.l{left:0;transform:none}.maxlbl.r{left:auto;right:0;transform:none}
 .bar::after{content:"";display:block;width:100%;height:calc(var(--h)*100%);min-height:2px;background:var(--bc, var(--cc));border-radius:3px;opacity:.85}
 .bar.vac::after{opacity:1}
@@ -429,8 +429,8 @@ function monthHTML(){
   </div>
 
   <section class="card">
-    <h2>card spend by day${yrAvg ? `<span class="h2n"><i class="dash"></i>${y} avg ${fmt$0(yrAvg)}/day</span>` : ''}</h2>
-    <div class="bars" style="height:${plotH + 22}px">${yrAvg ? `<div class="avgline" style="bottom:${(Math.min(1, yrAvg / top) * plotH).toFixed(1)}px"></div>` : ''}${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''} ${days[i][1].hl ? 'vac' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}${days[i][1].hl ? ';--bc:' + days[i][1].hl : ''}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
+    <h2>card spend by day</h2>
+    <div class="bars" style="height:${plotH + 22}px">${yrAvg ? `<div class="avgline" style="bottom:${(Math.min(1, yrAvg / top) * plotH).toFixed(1)}px"><span>${y} avg ${fmt$0(yrAvg)}/day</span></div>` : ''}${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''} ${days[i][1].hl ? 'vac' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}${days[i][1].hl ? ';--bc:' + days[i][1].hl : ''}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
 
