@@ -156,6 +156,28 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .hr{text-align:right;font-size:14px;font-weight:650;display:flex;flex-direction:column;align-items:flex-end}
 .hr .bo{color:var(--bofa)}
 .hr small{font-weight:400;color:var(--muted);font-size:12px}
+.gsum{color:var(--muted);font-size:14px;margin:-4px 4px 12px}
+.veh{padding:0 16px}
+.vhead{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:14px 0}
+.vt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vt b{font-size:17px;font-weight:700}
+.plate{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:6px;border:1.5px solid var(--ink);color:var(--ink)}
+.vs{display:flex;align-items:baseline;gap:8px}
+.vc{font-size:22px;font-weight:750;letter-spacing:-.02em}
+.vs small{color:var(--muted);font-size:13px}
+.vbody{border-top:1px solid var(--line);padding:4px 0 8px}
+.vrow{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;padding:8px 0;font-size:14px}
+.vrow .k{width:44px;color:var(--muted);font-size:12px;font-weight:600}
+.vrow .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:.02em}
+.vrow .cp{margin-left:auto;color:var(--accent);font-size:12px;font-weight:650}
+.vrow.note{color:var(--muted);font-size:13px;padding:2px 0 6px 54px}
+.parts{margin-top:6px;border-top:1px solid var(--line)}
+.prow{display:flex;gap:10px;align-items:baseline;padding:9px 0;font-size:14px}
+.prow .pn{flex:1;min-width:0}
+.prow .pa{color:var(--muted);font-size:12px;white-space:nowrap}
+.prow .pa.old{color:var(--cc);font-weight:600}
+.prow .pp{width:62px;text-align:right;font-weight:650;white-space:nowrap}
+.prow.base .pn{color:var(--muted)}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
 
 /* tab bar */
@@ -227,6 +249,7 @@ nav .in{display:flex;width:100%;max-width:560px}
   <button class="tab" data-view="today"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>today</button>
   <button class="tab" data-view="month"><svg viewBox="0 0 24 24"><path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/></svg>month</button>
   <button class="tab" data-view="history"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>history</button>
+  <button class="tab" data-view="garage"><svg viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5V20h-17z"/><path d="M7.5 20v-6.5h9V20M7.5 16.5h9"/></svg>garage</button>
   <!-- data tab hidden; ask Claude to bring it back when adding a device -->
 </div></nav>
 
@@ -296,7 +319,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { if 
 
 function render(){
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.view === view));
-  main.innerHTML = view === 'today' ? todayHTML() : view === 'month' ? monthHTML() : historyHTML();
+  main.innerHTML = view === 'today' ? todayHTML() : view === 'month' ? monthHTML() : view === 'garage' ? garageHTML() : historyHTML();
   main.querySelectorAll('textarea').forEach(autosize);
 }
 function autosize(t){ t.style.height = 'auto'; t.style.height = Math.max(72, t.scrollHeight) + 'px'; }
@@ -486,6 +509,81 @@ function histList(){
         <span class="hr">${c ? `<span>${fmt$(c)}</span>` : ''}${b ? `<span class="bo">${fmt$(b)}</span>` : ''}</span></button>`;
     }).join('')}</div>`;
   }).join('');
+}
+
+
+/* ---------- garage (read-only copy of the sheet's "vehicles" tab) ---------- */
+let openVeh = {};
+const gMoney = v => { const n = parseFloat(String(v || '').replace(/[$,\s]/g, '')); return isNaN(n) ? null : Math.round(n * 100); };
+function sheetDate(v){
+  const m = String(v || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/); if (!m) return null;
+  const y = m[3].length === 2 ? 2000 + +m[3] : +m[3];
+  return y + '-' + pad(+m[1]) + '-' + pad(+m[2]);
+}
+function ageOf(k){
+  if (!k) return {txt: '', y: 0};
+  const a = fromISO(k), b = fromISO(todayISO());
+  let y = b.getFullYear() - a.getFullYear(), m = b.getMonth() - a.getMonth(), d = b.getDate() - a.getDate();
+  if (d < 0) { m--; d += new Date(b.getFullYear(), b.getMonth(), 0).getDate(); }
+  if (m < 0) { y--; m += 12; }
+  if (y < 0) return {txt: 'not yet', y: 0};
+  const txt = y ? y + 'y' + (m ? ' ' + m + 'm' : '') : m ? m + 'm' + (d ? ' ' + d + 'd' : '') : d + 'd';
+  return {txt, y: y + m / 12};
+}
+// Reads the vehicles tab: a row whose name starts with a year is a vehicle ("1988 suzuki samurai - VIN", "... sold"),
+// the rows under it are its parts. Column H under a vehicle holds state, then plate, then notes; column K holds the title number.
+function parseGarage(rows){
+  const out = []; let cur = null;
+  for (const r of rows || []) {
+    const c = i => String((r || [])[i] ?? '').trim();
+    const name = c(1), price = gMoney(c(2)), date = sheetDate(c(3)), h = c(7);
+    if (/^(19|20)\d\d\s/.test(name)) {
+      const sold = /\bsold\s*$/i.test(name);
+      const [title, vin] = name.replace(/\s*\bsold\s*$/i, '').split(/\s+-\s+/);
+      cur = {name: title.toLowerCase(), vin: (vin || '').toUpperCase(), price, date, sold, soldFor: sold ? gMoney(h) : null,
+             titleNo: c(10), cost: gMoney(c(5)), parts: [], h: sold ? [] : (h ? [h] : [])};
+      out.push(cur);
+    } else if (cur && name) {
+      cur.parts.push({name: name.toLowerCase(), price, date});
+      if (h) cur.h.push(h);
+    } else if (cur && !name && h) cur.h.push(h);
+  }
+  for (const v of out) {
+    v.state = (v.h[0] || '').toLowerCase(); v.plate = (v.h[1] || '').toLowerCase(); v.notes = v.h.slice(2).map(x => x.toLowerCase());
+    // the sheet's own cost column wins (it can leave things out on purpose); otherwise add it up
+    v.total = v.cost != null ? v.cost : (v.price || 0) + v.parts.reduce((t, x) => t + (x.price || 0), 0);
+    v.parts.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }
+  return out;
+}
+function garageHTML(){
+  const all = parseGarage(S.garage);
+  if (!all.length) return `<header class="top"><h1 class="ttl">garage</h1></header>
+    <p class="empty">nothing here yet.<br>your vehicles show up after the next sync.</p>`;
+  const act = all.filter(v => !v.sold), sold = all.filter(v => v.sold);
+  const tot = act.reduce((t, v) => t + v.total, 0);
+  const card = (v, i) => {
+    const key = v.vin || v.name, open = !!openVeh[key], own = ageOf(v.date);
+    return `<section class="card veh ${open ? 'open' : ''}">
+      <button class="vhead" data-act="veh" data-k="${esc(key)}">
+        <span class="vt"><b>${esc(v.name)}</b>${v.plate ? `<i class="plate">${esc(v.plate)}</i>` : ''}</span>
+        <span class="vs"><span class="vc">${fmt$0(v.total)}</span><small>${v.sold ? (v.soldFor != null ? 'sold for ' + fmt$0(v.soldFor) : 'sold') : 'owned ' + own.txt} · ${v.parts.length} item${v.parts.length === 1 ? '' : 's'}</small></span>
+      </button>
+      ${open ? `<div class="vbody">
+        ${v.vin ? `<button class="vrow" data-act="copy" data-v="${esc(v.vin)}"><span class="k">vin</span><span class="mono">${esc(v.vin)}</span><span class="cp">copy</span></button>` : ''}
+        ${v.titleNo ? `<button class="vrow" data-act="copy" data-v="${esc(v.titleNo)}"><span class="k">title</span><span class="mono">${esc(v.titleNo)}</span><span class="cp">copy</span></button>` : ''}
+        ${v.state ? `<div class="vrow"><span class="k">state</span><span>${esc(v.state)}</span></div>` : ''}
+        ${v.notes.map(n => `<div class="vrow note">${esc(n)}</div>`).join('')}
+        <ul class="list parts">
+          <li class="prow base"><span class="pn">${v.sold ? 'bought' : 'purchase'}</span><span class="pa">${own.txt}</span><span class="pp">${v.price != null ? fmt$0(v.price) : ''}</span></li>
+          ${v.parts.map(x => { const a = ageOf(x.date); return `<li class="prow"><span class="pn">${esc(x.name)}</span><span class="pa ${a.y >= 3 ? 'old' : ''}">${a.txt}</span><span class="pp">${x.price != null ? fmt$0(x.price) : ''}</span></li>`; }).join('')}
+        </ul></div>` : ''}
+    </section>`;
+  };
+  return `<header class="top"><h1 class="ttl">garage</h1></header>
+    <p class="gsum">${act.length} vehicle${act.length === 1 ? '' : 's'} · ${fmt$0(tot)} all in</p>
+    ${act.map(card).join('')}
+    ${sold.length ? `<h3 class="mh">sold</h3>${sold.map(card).join('')}` : ''}`;
 }
 
 /* ---------- sheets ---------- */
@@ -861,6 +959,8 @@ document.addEventListener('click', e => {
   }
   else if (act === 'sleep') { const d = ensure(sel); d.s = d.s == null ? 7 : Math.max(0, Math.min(14, d.s + +el.dataset.n)); save(); render(); }
   else if (act === 'wo') { const d = ensure(sel); d.wo = !d.wo; save(); render(); }
+  else if (act === 'veh') { openVeh[el.dataset.k] = !openVeh[el.dataset.k]; render(); }
+  else if (act === 'copy') { const v = el.dataset.v; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => toast('copied ' + v.toLowerCase().slice(-6)), () => toast('couldn’t copy')); }
   else if (act === 'jump') { const to = document.getElementById(el.dataset.to); if (to) to.scrollIntoView({behavior: 'smooth', block: 'start'}); }
   else if (act === 'mprev') { if (selMonth > firstMonth()) { selMonth = addMonths(selMonth, -1); render(); } }
   else if (act === 'mnext') { if (selMonth < t.slice(0, 7)) { selMonth = addMonths(selMonth, 1); render(); } }
@@ -967,6 +1067,7 @@ async function sync(){
       const ld = S.days[k];
       if (!ld ? !blank(rd) : (rd.u || 0) > (ld.u || 0)) { S.days[k] = rd; changed = true; }
     }
+    if (Array.isArray(j.garage) && JSON.stringify(j.garage) !== JSON.stringify(S.garage || null)) { S.garage = j.garage; if (view === 'garage') changed = true; }
     S.meta.lastSync = Date.now();
     persist();
     setSync('ok'); ok = true;
