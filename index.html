@@ -176,6 +176,8 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .vrow .k{width:44px;color:var(--muted);font-size:12px;font-weight:600}
 .vrow .num{font-size:14px;font-variant-numeric:tabular-nums}
 .vrow .cp{width:15px;height:15px;flex:0 0 15px;align-self:center;margin-left:-2px;fill:none;stroke:var(--muted);opacity:.6;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vrow .left{color:var(--muted);opacity:.7;font-size:13px}
+.vrow .left.soon{color:var(--danger);opacity:1}
 .vrow.note{color:var(--muted);font-size:13px;padding:2px 0 6px 54px}
 .parts{margin-top:6px;border-top:1px solid var(--line)}
 .prow{display:flex;gap:10px;align-items:baseline;padding:9px 0;font-size:14px}
@@ -553,7 +555,7 @@ function parseGarage(rows){
       const sold = /\bsold\s*$/i.test(name);
       const [title, vin] = name.replace(/\s*\bsold\s*$/i, '').split(/\s+-\s+/);
       cur = {name: title.toLowerCase(), vin: (vin || '').toUpperCase(), price, date, sold, soldFor: sold ? gMoney(h) : null,
-             order: parseFloat(c(0)), titleNo: c(10), cost: gMoney(c(5)), paint: /^#[0-9a-f]{3,8}$/i.test(c(11)) ? c(11) : '', plateStyle: c(12).toLowerCase(), parts: [], h: sold ? [] : (h ? [h] : [])};
+             order: parseFloat(c(0)), reg: ISO_RE.test(c(13)) ? c(13) : sheetDate(c(13)), titleNo: c(10), cost: gMoney(c(5)), paint: /^#[0-9a-f]{3,8}$/i.test(c(11)) ? c(11) : '', plateStyle: c(12).toLowerCase(), parts: [], h: sold ? [] : (h ? [h] : [])};
       out.push(cur);
     } else if (cur && name) {
       cur.parts.push({name: name.toLowerCase(), price, date});
@@ -615,6 +617,7 @@ function garageHTML(){
       ${open ? `<div class="vbody">
         ${v.vin ? `<button class="vrow" data-act="copy" data-v="${esc(v.vin)}"><span class="k">vin</span><span class="num">${esc(v.vin)}</span><svg class="cp" viewBox="0 0 24 24" aria-label="copy"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></svg></button>` : ''}
         ${v.titleNo ? `<button class="vrow" data-act="copy" data-v="${esc(v.titleNo)}"><span class="k">title</span><span class="num">${esc(v.titleNo)}</span><svg class="cp" viewBox="0 0 24 24" aria-label="copy"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></svg></button>` : ''}
+        ${v.reg ? (() => { const n = Math.round((fromISO(v.reg) - fromISO(todayISO())) / 864e5), d = fromISO(v.reg); return `<div class="vrow"><span class="k">reg</span><span class="num">${MON[d.getMonth()].slice(0, 3)} ${d.getDate()}, ${d.getFullYear()}</span><span class="left ${n < 30 ? 'soon' : ''}">${n < 0 ? 'expired ' + -n + ' day' + (n === -1 ? '' : 's') + ' ago' : n === 0 ? 'expires today' : n + ' day' + (n === 1 ? '' : 's') + ' left'}</span></div>`; })() : ''}
         <ul class="list parts">
           <li class="prow base"><span class="pn">${v.sold ? 'bought' : 'purchase'}</span><span class="pa">${own.txt}</span><span class="pp">${v.price != null ? fmt$0(v.price) : ''}</span></li>
           ${parts.map(x => { const a = ageOf(x.date); return `<li class="prow ${x.pending ? 'pending' : ''}"><span class="pn">${esc(x.name)}</span><span class="pa">${x.pending ? 'saving…' : a.txt}</span><span class="pp">${x.price != null ? fmt$0(x.price) : ''}</span></li>`; }).join('')}
