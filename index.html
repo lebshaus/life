@@ -580,7 +580,6 @@ function garageHTML(){
       ${open ? `<div class="vbody">
         ${v.vin ? `<button class="vrow" data-act="copy" data-v="${esc(v.vin)}"><span class="k">vin</span><span class="mono">${esc(v.vin)}</span><span class="cp">copy</span></button>` : ''}
         ${v.titleNo ? `<button class="vrow" data-act="copy" data-v="${esc(v.titleNo)}"><span class="k">title</span><span class="mono">${esc(v.titleNo)}</span><span class="cp">copy</span></button>` : ''}
-        ${v.notes.map(n => `<div class="vrow note">${esc(n)}</div>`).join('')}
         <ul class="list parts">
           <li class="prow base"><span class="pn">${v.sold ? 'bought' : 'purchase'}</span><span class="pa">${own.txt}</span><span class="pp">${v.price != null ? fmt$0(v.price) : ''}</span></li>
           ${v.parts.map(x => { const a = ageOf(x.date); return `<li class="prow"><span class="pn">${esc(x.name)}</span><span class="pa ${a.y >= 3 ? 'old' : ''}">${a.txt}</span><span class="pp">${x.price != null ? fmt$0(x.price) : ''}</span></li>`; }).join('')}
