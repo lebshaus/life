@@ -773,8 +773,21 @@ function subsDue(){
 const BILLS = ['mortgage', 'at&t fiber', 'ok natural gas', 'og&e', 'okc utilities'];
 const FIXED_BILLS = ['mortgage'];
 // a bill shows up again ~27 days after it was last logged, so drifting due dates still work
+// banks only post bill payments on business days: no weekends, no federal reserve holidays
+function bankHoliday(k){
+  const d = fromISO(k), y = d.getFullYear(), m = d.getMonth(), day = d.getDate(), dow = d.getDay();
+  const nth = (mo, wd, n) => { const f = new Date(y, mo, 1); return 1 + (wd - f.getDay() + 7) % 7 + (n - 1) * 7; };
+  const lastMon = mo => { const l = new Date(y, mo + 1, 0); return l.getDate() - (l.getDay() + 6) % 7; };
+  const fixed = [[0, 1], [5, 19], [6, 4], [10, 11], [11, 25]];
+  if (fixed.some(([mo, dd]) => m === mo && day === dd)) return true;
+  if (dow === 1 && fixed.some(([mo, dd]) => { const x = new Date(y, mo, dd); return x.getDay() === 0 && m === mo && day === dd + 1; })) return true;   // sunday holiday, observed monday
+  return (m === 0 && day === nth(0, 1, 3)) || (m === 1 && day === nth(1, 1, 3)) || (m === 4 && day === lastMon(4)) ||
+    (m === 8 && day === nth(8, 1, 1)) || (m === 9 && day === nth(9, 1, 2)) || (m === 10 && day === nth(10, 4, 4));
+}
+function bankDay(k){ const w = fromISO(k).getDay(); return w !== 0 && w !== 6 && !bankHoliday(k); }
 function billsDue(){
   const t = todayISO(), last = {}, lastAmt = {};
+  if (!bankDay(t)) return [];
   for (const k of Object.keys(S.days).sort()) for (const e of (S.days[k].bo || [])) {
     const n = (e.n || '').trim().toLowerCase();
     if (BILLS.includes(n)) { last[n] = k; lastAmt[n] = e.a; }
