@@ -772,7 +772,6 @@ function subsDue(){
 /* ---------- monthly bills reminder ---------- */
 const BILLS = ['mortgage', 'at&t fiber', 'ok natural gas', 'og&e', 'okc utilities'];
 const FIXED_BILLS = ['mortgage'];
-// a bill shows up again ~27 days after it was last logged, so drifting due dates still work
 // banks only post bill payments on business days: no weekends, no federal reserve holidays
 function bankHoliday(k){
   const d = fromISO(k), y = d.getFullYear(), m = d.getMonth(), day = d.getDate(), dow = d.getDay();
@@ -785,15 +784,29 @@ function bankHoliday(k){
     (m === 8 && day === nth(8, 1, 1)) || (m === 9 && day === nth(9, 1, 2)) || (m === 10 && day === nth(10, 4, 4));
 }
 function bankDay(k){ const w = fromISO(k).getDay(); return w !== 0 && w !== 6 && !bankHoliday(k); }
+// When does a bill start showing? One day before the earliest day of the month it has posted in the last 6 months,
+// for the next billing cycle (bills that land right at month end, like ok natural gas, count toward the next month).
+// It then stays up every business day until it's logged, so a bill that posts later is never missed.
+function billStart(dates){
+  const off = k => { const d = fromISO(k), dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); return d.getDate() >= 25 ? d.getDate() - dim : d.getDate(); };
+  const cyc = k => { const d = fromISO(k); return d.getFullYear() * 12 + d.getMonth() + (off(k) <= 0 ? 1 : 0); };
+  const last = dates[dates.length - 1];
+  if (dates.length < 3) return addDays(last, 27);   // not enough history yet
+  const early = Math.min(...dates.slice(-6).map(off));
+  const c = cyc(last) + 1, start = new Date(Math.floor(c / 12), c % 12, 1);
+  start.setDate(start.getDate() + early - 2);   // one day of slack before the earliest it has posted
+  const k = iso(start);
+  return k > addDays(last, 40) ? addDays(last, 27) : k < addDays(last, 20) ? addDays(last, 20) : k;
+}
 function billsDue(){
-  const t = todayISO(), last = {}, lastAmt = {};
+  const t = todayISO(), seen = {}, lastAmt = {};
   if (!bankDay(t)) return [];
   for (const k of Object.keys(S.days).sort()) for (const e of (S.days[k].bo || [])) {
     const n = (e.n || '').trim().toLowerCase();
-    if (BILLS.includes(n)) { last[n] = k; lastAmt[n] = e.a; }
+    if (BILLS.includes(n)) { (seen[n] = seen[n] || []).push(k); lastAmt[n] = e.a; }
   }
-  return BILLS.map(n => ({n, when: last[n], a: lastAmt[n]}))
-    .filter(b => b.when && (fromISO(t) - fromISO(b.when)) / 864e5 >= 27);
+  return BILLS.filter(n => seen[n] && t >= billStart([...new Set(seen[n])]))
+    .map(n => ({n, when: seen[n][seen[n].length - 1], a: lastAmt[n], from: billStart([...new Set(seen[n])])}));
 }
 /* ---------- day highlight (vacations, special days) ---------- */
 const HL_COLORS = ['#cfe2f3', '#d0e0e3', '#d9ead3', '#fff2cc', '#d9d2e9', '#f4cccc', '#fce5cd'];   // google sheets' light 3 palette
