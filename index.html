@@ -181,7 +181,6 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .prow{display:flex;gap:10px;align-items:baseline;padding:9px 0;font-size:14px}
 .prow .pn{flex:1;min-width:0}
 .prow .pa{color:var(--muted);font-size:12px;white-space:nowrap}
-.prow .pa.old{color:var(--cc);font-weight:600}
 .prow .pp{width:62px;text-align:right;font-weight:650;white-space:nowrap}
 .prow.base .pn{color:var(--muted)}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
@@ -582,7 +581,7 @@ function garageHTML(){
         ${v.titleNo ? `<button class="vrow" data-act="copy" data-v="${esc(v.titleNo)}"><span class="k">title</span><span class="num">${esc(v.titleNo)}</span><svg class="cp" viewBox="0 0 24 24" aria-label="copy"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></svg></button>` : ''}
         <ul class="list parts">
           <li class="prow base"><span class="pn">${v.sold ? 'bought' : 'purchase'}</span><span class="pa">${own.txt}</span><span class="pp">${v.price != null ? fmt$0(v.price) : ''}</span></li>
-          ${v.parts.map(x => { const a = ageOf(x.date); return `<li class="prow"><span class="pn">${esc(x.name)}</span><span class="pa ${a.y >= 3 ? 'old' : ''}">${a.txt}</span><span class="pp">${x.price != null ? fmt$0(x.price) : ''}</span></li>`; }).join('')}
+          ${v.parts.map(x => { const a = ageOf(x.date); return `<li class="prow"><span class="pn">${esc(x.name)}</span><span class="pa">${a.txt}</span><span class="pp">${x.price != null ? fmt$0(x.price) : ''}</span></li>`; }).join('')}
         </ul></div>` : ''}
     </section>`;
   };
