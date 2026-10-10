@@ -434,7 +434,7 @@ function monthHTML(){
   <section class="card">
     <h2>card spend by day</h2>
     <div class="bars" style="height:${plotH + 22}px">${yrAvg ? `<div class="avgline" style="bottom:${(Math.min(1, yrAvg / top) * plotH).toFixed(1)}px"><span>${fmt$0(yrAvg)}</span></div>` : ''}${vals.map((v, i) => `<button class="bar ${keys[i] > t ? 'fut' : v === 0 ? 'zero' : ''} ${v > top ? 'over' : ''} ${days[i][1].hl ? 'vac' : ''}" style="--h:${Math.min(1, v / top).toFixed(4)}${days[i][1].hl ? ';--bc:' + days[i][1].hl : ''}" data-act="goday" data-k="${keys[i]}" aria-label="${short(keys[i])}: ${fmt$(v)}">${i === maxI ? `<span class="maxlbl ${i < 3 ? 'l' : i > dim - 4 ? 'r' : ''}">${fmt$0(maxV)}</span>` : ''}</button>`).join('')}</div>
-    ${trips.length ? `<div class="trips">${trips.map(r => `<span style="left:${(r.i / dim * 100).toFixed(2)}%;width:${(r.n / dim * 100).toFixed(2)}%;--bc:${r.c}">${esc(r.name)}</span>`).join('')}</div>` : ''}
+    <div class="trips">${trips.map(r => `<span style="left:${(r.i / dim * 100).toFixed(2)}%;width:${(r.n / dim * 100).toFixed(2)}%;--bc:${r.c}">${esc(r.name)}</span>`).join('')}</div>
     <div class="axis"><span>1</span><span>${Math.ceil(dim / 2)}</span><span>${dim}</span></div>
   </section>
 
