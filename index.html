@@ -166,6 +166,8 @@ textarea{width:100%;border:0;background:transparent;outline:none;resize:none;pad
 .plate small{font-size:7px;font-weight:800;letter-spacing:0;color:#000;line-height:1}
 .plate b{flex:1;display:flex;align-items:center;padding-bottom:3px;font-size:14px;font-weight:800;color:#000;line-height:1;letter-spacing:0;transform:scaleY(1.12)}
 .plate.sand{background:#f8f1de}
+.plate.pimg{padding:0;overflow:hidden}
+.plate.pimg img{display:block;width:100%;height:100%;object-fit:cover}
 .plate.california b{color:#0c487f}
 .plate.california small{color:#e52c2c}
 .vs{display:flex;align-items:baseline;column-gap:7px;flex-wrap:wrap}
@@ -614,7 +616,7 @@ function garageHTML(){
         <i class="paint" style="${v.paint ? 'background:' + v.paint : ''}"></i>
         <span class="vmid"><b class="vn">${esc(v.name)}</b>
           <span class="vs"><span class="vc">${fmt$0(total)}</span><small>${v.sold ? (v.soldFor != null ? 'sold for ' + fmt$0(v.soldFor) : 'sold') : 'owned ' + own.txt} · ${parts.length} item${parts.length === 1 ? '' : 's'}</small></span></span>
-        ${v.plate ? `<span class="plate ${/^(sand|california)$/.test(v.plateStyle) ? v.plateStyle : ''}"><small>${esc((v.state || 'oklahoma').toUpperCase())}</small><b>${esc(v.plate)}</b></span>` : ''}
+        ${v.plate && /^img:[\w.-]+$/.test(v.plateStyle) ? `<span class="plate pimg"><img src="plates/${esc(v.plateStyle.slice(4))}" alt="${esc(v.plate)}"></span>` : v.plate ? `<span class="plate ${/^(sand|california)$/.test(v.plateStyle) ? v.plateStyle : ''}"><small>${esc((v.state || 'oklahoma').toUpperCase())}</small><b>${esc(v.plate)}</b></span>` : ''}
       </button>
       ${open ? `<div class="vbody">
         ${v.vin ? `<button class="vrow" data-act="copy" data-v="${esc(v.vin)}"><span class="k">vin</span><span class="num">${esc(v.vin)}</span><svg class="cp" viewBox="0 0 24 24" aria-label="copy"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></svg></button>` : ''}
